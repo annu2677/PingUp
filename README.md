@@ -1,5 +1,8 @@
 # 🚀 PingUp
 
+![PingUp Banner](./screenshots/home-feed.png)
+
+
 PingUp is a modern social media web application that allows users to connect, share posts, interact with content, and engage with a growing community.
 
 ## ✨ Features
@@ -150,15 +153,44 @@ application.properties
 
 ## 📸 Screenshots
 
-Add screenshots of:
+### 🔐 Login Page
 
-* Login Page
-* Registration Page
-* Home Feed
-* Post Creation
-* Like Feature
+![Login Page](./screenshots/login-page.png)
+
+Secure user authentication with a clean and modern interface.
 
 ---
+
+### 📝 Registration Page
+
+![Registration Page](./screenshots/signup-page.png)
+
+New users can create an account using their name, username, email, and password.
+
+---
+
+### 🏠 Home Feed
+
+![Home Feed](./screenshots/home-feed.png)
+
+Interactive social feed displaying user posts, likes, comments, and trending topics.
+
+---
+
+### 📷 Create Post – Image Upload
+
+![Create Post Upload](./screenshots/create-post-upload.png)
+
+Users can upload images directly from their device while creating a new post.
+
+---
+
+### ✍️ Create Post – Caption Writing
+
+![Create Post Caption](./screenshots/create-post-caption.png)
+
+Add captions and share content with the community in a few clicks.
+
 
 ## 🎯 Future Improvements
 
