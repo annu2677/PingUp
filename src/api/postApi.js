@@ -1,18 +1,19 @@
+const API_URL = "https://pingup-backend-u6df.onrender.com/api";
 export const getPosts = async () => {
-  const response = await fetch(`/api/posts`);
+  console.log("POST API URL =", `${API_URL}/posts`);
+  const response = await fetch(`${API_URL}/posts`);
+
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(data.message || "Failed to fetch posts");
   }
 
-  return Array.isArray(data)
-    ? data
-    : data.posts || data.data || [];
+  return Array.isArray(data) ? data : data.posts || data.data || [];
 };
 
 export const createPost = async (postData) => {
-  const response = await fetch(`/api/posts`, {
+  const response = await fetch(`${API_URL}/posts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -28,3 +29,5 @@ export const createPost = async (postData) => {
 
   return data;
 };
+
+export const createPostAPI = createPost;

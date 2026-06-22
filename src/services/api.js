@@ -1,5 +1,8 @@
+const API_URL = "https://pingup-backend-u6df.onrender.com/api";
+
 export const getPosts = async () => {
-  const response = await fetch(`/api/posts`);
+  
+  const response = await fetch(`${API_URL}/posts`);
 
   const data = await response.json();
 
@@ -7,27 +10,25 @@ export const getPosts = async () => {
     throw new Error(data.message || "Failed to fetch posts");
   }
 
-  console.log("POSTS FROM BACKEND:", data);
-
-  return Array.isArray(data) ? data : data.posts || [];
+  return Array.isArray(data) ? data : data.posts || data.data || [];
 };
 
-export const createPostAPI = async (postData) => {
-  try {
-    const response = await fetch(`/api/posts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(postData),
-    });
+export const createPost = async (postData) => {
+  const response = await fetch(`${API_URL}/posts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(postData),
+  });
 
-    return await response.json();
-  } catch (error) {
-    console.log(error);
-    return null;
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to create post");
   }
+
+  return data;
 };
 
-// Backwards-compatible alias
-export const createPost = createPostAPI;
+export const createPostAPI = createPost;

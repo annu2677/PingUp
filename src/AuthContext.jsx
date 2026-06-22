@@ -28,20 +28,20 @@ export function AuthProvider({ children }) {
         password,
       });
 
-      console.log("LOGIN RESPONSE:", loggedInUser);
-
-      if (!loggedInUser || !loggedInUser.id) {
+      if (!loggedInUser || !loggedInUser.id || !loggedInUser.token) {
         alert("Invalid login response");
         return;
       }
 
       setUser(loggedInUser);
       localStorage.setItem("currentUser", JSON.stringify(loggedInUser));
-
-      console.log("SAVED USER:", localStorage.getItem("currentUser"));
     } catch (error) {
       console.error("LOGIN ERROR:", error);
-      alert("Invalid email or password");
+      if (error instanceof TypeError) {
+        alert("Unable to reach auth server. Check your API URL and backend status.");
+      } else {
+        alert(error.message || "Invalid email or password");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +58,6 @@ export function AuthProvider({ children }) {
         password,
       });
 
-      console.log("SIGNUP RESPONSE:", newUser);
-
       if (!newUser?.id) {
         throw new Error(newUser?.message || 'Signup failed');
       }
@@ -68,7 +66,11 @@ export function AuthProvider({ children }) {
       localStorage.setItem("currentUser", JSON.stringify(newUser));
     } catch (error) {
       console.error("SIGNUP ERROR:", error);
-      alert(error.message || 'Unable to create account.');
+      if (error instanceof TypeError) {
+        alert("Unable to reach auth server. Check your API URL and backend status.");
+      } else {
+        alert(error.message || 'Unable to create account.');
+      }
     } finally {
       setIsLoading(false);
     }

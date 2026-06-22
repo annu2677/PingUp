@@ -1,4 +1,4 @@
-﻿const API_URL = "http://localhost:9999/api/likes";
+const API_URL = "https://pingup-backend-u6df.onrender.com/api/likes";
 
 export const toggleLike = async (postId, userId) => {
   const response = await fetch(`${API_URL}/${postId}`, {

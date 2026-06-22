@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:9999/api/users";
+const API_URL = "https://pingup-backend-u6df.onrender.com/api/users";
 
 export const registerUser = async (userData) => {
   const response = await fetch(`${API_URL}/register`, {
