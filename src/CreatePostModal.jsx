@@ -1,4 +1,3 @@
-import { createPost as createPostApi } from './api/postApi'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Image, Heart, MessageCircle, Send, Bookmark } from 'lucide-react'
@@ -24,12 +23,13 @@ export default function CreatePostModal({ isOpen, onClose }) {
 
     setIsLoading(true)
     try {
-      createPost(image, caption)
+      await createPost(image, caption)
       setImage('')
       setCaption('')
       onClose()
     } catch (error) {
       console.error('Error creating post:', error)
+      alert('Unable to create the post. Please try again.')
     } finally {
       setIsLoading(false)
     }

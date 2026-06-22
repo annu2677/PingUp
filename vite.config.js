@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:9999',
+        target: 'https://pingup-backend-u6df.onrender.com',
         changeOrigin: true,
         secure: false,
       },

@@ -1,7 +1,7 @@
-import { getPosts, createPost as savePost } from "./api/postApi";
-import { toggleLike, getLikeCount, isPostLikedByUser } from "./api/likeApi";
-import { useAuth } from "./AuthContext";
-import { createContext, useState, useContext, useEffect } from 'react'
+import { getPosts, createPost as savePost } from './api/postApi'
+import { toggleLike, getLikeCount, isPostLikedByUser } from './api/likeApi'
+import { useAuth } from './AuthContext'
+import { createContext, useState, useContext, useEffect, useCallback } from 'react'
 
 const SocialContext = createContext()
 
@@ -9,74 +9,110 @@ export function SocialProvider({ children }) {
   const [posts, setPosts] = useState([])
   const [users, setUsers] = useState([])
   const [messages, setMessages] = useState({})
-  const [currentUser, setCurrentUser] = useState(null)
-  const [notifications, setNotifications] = useState([])
+  const [notifications, _setNotifications] = useState([])
 
-  const { user } = useAuth();
+  const { user } = useAuth()
 
-  // Load posts when user changes
-  useEffect(() => {
-    if (user) {
-      setCurrentUser(user);
-      loadPosts();
-    }
-  }, [user]);
+  const loadPosts = useCallback(async () => {
+    console.log('LOAD POSTS CALLED')
 
-  // Fetch posts from backend
-  const loadPosts = async () => {
     try {
-      const data = await getPosts();
+      const rawResponse = await getPosts()
+      const data = Array.isArray(rawResponse)
+        ? rawResponse
+        : rawResponse?.posts || rawResponse?.data || []
 
-      const formattedPosts = await Promise.all(data.map(async (post) => {
-        const likes = await getLikeCount(post.id);
-        const liked = currentUser
-          ? await isPostLikedByUser(post.id, currentUser.id)
-          : false;
+      console.log('RAW POSTS FROM BACKEND:', data)
 
-        return {
-          id: post.id,
-          user: {
-            id: post.userId || 1,
-            username: post.username,
-            name: post.username,
-            avatar: post.username?.charAt(0).toUpperCase()
-          },
-          image: post.imageUrl,
-          caption: post.content,
-          likes: likes,
-          comments: 0,
-          timestamp: post.createdAt ? new Date(post.createdAt) : new Date(),
-          liked: liked,
-          hashtags: [],
-          commentsList: []
-        };
-      }));
+      const formattedPosts = await Promise.all(
+        data.map(async (post) => {
+          const postId = post.id || post._id
+          const postUser = post.user || {
+            id: post.userId || post.user?._id || post._id || 1,
+            username: post.username || post.user?.username || 'Unknown',
+            name: post.name || post.user?.name || post.username || 'Unknown',
+          }
 
-      setPosts(formattedPosts);
+          let likes = 0
+          let liked = false
+
+          try {
+            likes = await getLikeCount(postId)
+          } catch (err) {
+            console.error('Like count failed for post:', postId, err)
+          }
+
+          try {
+            liked = user ? await isPostLikedByUser(postId, user.id) : false
+          } catch (err) {
+            console.error('Liked status failed for post:', postId, err)
+          }
+
+          const caption = post.content || post.caption || post.body || ''
+          const image = post.imageUrl || post.image || ''
+          const timestampValue = post.createdAt || post.timestamp || post.date || new Date()
+
+          return {
+            id: postId,
+            user: {
+              id: postUser.id,
+              username: postUser.username || postUser.name || 'Unknown',
+              name: postUser.name || postUser.username || 'Unknown',
+              avatar:
+                postUser.avatar ||
+                postUser.username?.charAt(0).toUpperCase() ||
+                postUser.name?.charAt(0).toUpperCase() ||
+                'U',
+            },
+            image,
+            caption,
+            likes,
+            comments: 0,
+            timestamp: timestampValue ? new Date(timestampValue) : new Date(),
+            liked,
+            hashtags: [],
+            commentsList: [],
+          }
+        })
+      )
+
+      console.log('FORMATTED POSTS:', formattedPosts)
+      setPosts(formattedPosts)
     } catch (error) {
-      console.error("Error loading posts:", error);
+      console.error('Error loading posts:', error)
     }
-  };
+  }, [user])
 
-  // Create new post
+  useEffect(() => {
+    loadPosts()
+  }, [loadPosts])
+
   const createPost = async (image, caption) => {
-    if (!currentUser) {
-      console.error("No current user found");
-      return;
+    if (!user) {
+      console.error('No current user found')
+      return
     }
 
     try {
       const backendPost = {
-        username: currentUser.username,
+        username: user.username,
         content: caption,
-        imageUrl: image
-      };
+        imageUrl: image,
+      }
 
-      const savedPost = await savePost(backendPost);
-
+      const savedPost = await savePost(backendPost)
       const newPost = {
-        id: savedPost.id,
-        user: currentUser,
+        id: savedPost.id || savedPost._id,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name || user.username,
+          avatar:
+            user.avatar ||
+            user.username?.charAt(0).toUpperCase() ||
+            user.name?.charAt(0).toUpperCase() ||
+            'U',
+        },
         image: savedPost.imageUrl,
         caption: savedPost.content,
         likes: 0,
@@ -84,112 +120,180 @@ export function SocialProvider({ children }) {
         timestamp: new Date(savedPost.createdAt),
         liked: false,
         hashtags: [],
-        commentsList: []
-      };
+        commentsList: [],
+      }
 
-      setPosts(prev => [newPost, ...prev]);
-      return newPost;
+      setPosts((prev) => [newPost, ...prev])
+      return newPost
     } catch (error) {
-      console.error("Error creating post:", error);
+      console.error('Error creating post:', error)
     }
-  };
+  }
 
-  // Like/unlike a post
   const likePost = async (postId) => {
-  if (!currentUser) return
+    if (!user) return
 
-  const totalLikes = await toggleLike(postId, currentUser.id)
+    // previousState must be declared in outer scope so catch handlers can access it
+    let previousState = null
 
-  setPosts(prev =>
-    prev.map(post =>
-      post.id === postId
-        ? {
-            ...post,
-            likes: totalLikes,
-            liked: totalLikes > post.likes
+    try {
+      console.log('likePost called for', postId, 'by user', user?.id)
+
+      // Optimistic update: flip liked and adjust likes count immediately
+      setPosts((prev) => {
+        return prev.map((post) => {
+          if (String(post.id) === String(postId)) {
+            previousState = { ...post }
+            const newLiked = !post.liked
+            const newLikes = newLiked ? post.likes + 1 : Math.max(0, post.likes - 1)
+            return { ...post, liked: newLiked, likes: newLikes }
           }
-        : post
-    )
-  )
-}
-  // Add comment to post
+          return post
+        })
+      })
+
+      console.log('attempting toggleLike API call for', postId)
+      let totalLikes = await toggleLike(postId, user.id)
+      console.log('toggleLike response for', postId, totalLikes)
+
+      // Normalize response shapes: API may return number or object
+      if (typeof totalLikes === 'object' && totalLikes !== null) {
+        totalLikes = (
+          totalLikes.count ?? totalLikes.Count ?? totalLikes.total ?? totalLikes.likes ?? totalLikes
+        ) || 0
+      }
+
+      // Ensure numeric
+      totalLikes = Number(totalLikes) || 0
+
+      // Apply authoritative value from API
+      setPosts((prev) =>
+        prev.map((post) =>
+          String(post.id) === String(postId)
+            ? {
+                ...post,
+                likes: totalLikes,
+                liked: totalLikes > (previousState?.likes ?? 0),
+              }
+            : post
+        )
+      )
+    } catch (err) {
+      console.error('Error toggling like for', postId, err)
+      // Retry once after a short delay
+      try {
+        await new Promise((res) => setTimeout(res, 350))
+        console.log('Retrying toggleLike for', postId)
+        let totalLikesRetry = await toggleLike(postId, user.id)
+        if (typeof totalLikesRetry === 'object' && totalLikesRetry !== null) {
+          totalLikesRetry = (
+            totalLikesRetry.count ?? totalLikesRetry.Count ?? totalLikesRetry.total ?? totalLikesRetry.likes ?? totalLikesRetry
+          ) || 0
+        }
+        totalLikesRetry = Number(totalLikesRetry) || 0
+        setPosts((prev) =>
+          prev.map((post) =>
+            String(post.id) === String(postId)
+              ? { ...post, likes: totalLikesRetry, liked: totalLikesRetry > (previousState?.likes ?? 0) }
+              : post
+          )
+        )
+        return
+      } catch (err2) {
+        console.error('Retry failed for toggleLike', postId, err2)
+      }
+
+      // Revert optimistic update on final failure (no blocking alert)
+      setPosts((prev) =>
+        prev.map((post) => (String(post.id) === String(postId) && previousState ? previousState : post))
+      )
+    }
+  }
+
   const addComment = (postId, text) => {
     const newComment = {
       id: Date.now(),
-      user: currentUser,
+      user: user,
       text,
-      timestamp: new Date()
+      timestamp: new Date(),
     }
 
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: post.comments + 1,
-          commentsList: [...post.commentsList, newComment]
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (String(post.id) === String(postId)) {
+          return {
+            ...post,
+            comments: post.comments + 1,
+            commentsList: [...post.commentsList, newComment],
+          }
         }
-      }
-      return post
-    }))
-  };
+        return post
+      })
+    )
+  }
 
-  // Send message to user
   const sendMessage = (userId, text) => {
     const newMessage = {
       id: Date.now(),
       text,
-      sender: currentUser,
-      receiver: users.find(user => user.id === Number(userId)) || null,
+      sender: user,
+      receiver: users.find((user) => user.id === Number(userId)) || null,
       timestamp: new Date(),
-      read: true
+      read: true,
     }
 
-    setMessages(prev => ({
+    setMessages((prev) => ({
       ...prev,
-      [userId]: prev[userId] ? [...prev[userId], newMessage] : [newMessage]
+      [userId]: prev[userId] ? [...prev[userId], newMessage] : [newMessage],
     }))
-  };
+  }
 
-  // Follow user
   const followUser = (userId) => {
-    setUsers(prev => prev.map(user => {
-      if (user.id === userId) {
-        return { ...user, followers: user.followers + 1 }
-      }
-      return user
-    }))
-
-    setCurrentUser(prev => ({ ...prev, following: prev.following + 1 }))
-  };
-
-  // Search users
-  const searchUsers = (query) => {
-    return users.filter(user =>
-      user.username.toLowerCase().includes(query.toLowerCase()) ||
-      user.name.toLowerCase().includes(query.toLowerCase())
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === userId ? { ...user, followers: user.followers + 1 } : user
+      )
     )
-  };
+  }
 
-  // Get posts by user
+  const unfollowUser = (userId) => {
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === userId ? { ...user, followers: user.followers - 1 } : user
+      )
+    )
+  }
+
+  const searchUsers = (query) => {
+    return users.filter(
+      (user) =>
+        user.username.toLowerCase().includes(query.toLowerCase()) ||
+        user.name.toLowerCase().includes(query.toLowerCase())
+    )
+  }
+
   const getUserPosts = (userId) => {
-    return posts.filter(post => post.user.id === userId)
-  };
+    return posts.filter((post) => post.user.id === userId)
+  }
 
   return (
-    <SocialContext.Provider value={{
-      posts,
-      users,
-      messages,
-      currentUser,
-      notifications,
-      createPost,
-      likePost,
-      addComment,
-      sendMessage,
-      followUser,
-      searchUsers,
-      getUserPosts
-    }}>
+    <SocialContext.Provider
+      value={{
+        posts,
+        users,
+        messages,
+        currentUser: user,
+        notifications,
+        createPost,
+        likePost,
+        addComment,
+        sendMessage,
+        followUser,
+        unfollowUser,
+        searchUsers,
+        getUserPosts,
+      }}
+    >
       {children}
     </SocialContext.Provider>
   )

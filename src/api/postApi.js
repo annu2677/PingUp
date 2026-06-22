@@ -1,17 +1,30 @@
-const API_URL = "http://localhost:9999/api/posts";
-
 export const getPosts = async () => {
-  const response = await fetch(API_URL);
-  return response.json();
+  const response = await fetch(`/api/posts`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch posts");
+  }
+
+  return Array.isArray(data)
+    ? data
+    : data.posts || data.data || [];
 };
 
 export const createPost = async (postData) => {
-  const response = await fetch(API_URL, {
+  const response = await fetch(`/api/posts`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(postData)
+    body: JSON.stringify(postData),
   });
-  return response.json();
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to create post");
+  }
+
+  return data;
 };

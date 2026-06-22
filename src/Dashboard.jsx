@@ -7,6 +7,7 @@ import Sidebar from './Sidebar'
 import Feed from './Feed'
 import RightPanel from './RightPanel'
 import CreatePostModal from './CreatePostModal'
+import DebugPosts from './DebugPosts'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -83,6 +84,7 @@ export default function Dashboard() {
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
       />
+      <DebugPosts />
     </motion.div>
   )
 }

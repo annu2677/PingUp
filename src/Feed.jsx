@@ -11,7 +11,7 @@ function Feed() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.32em] text-slate-500">Good morning, designer</p>
+            <p className="text-sm uppercase tracking-[0.32em] text-slate-500"></p>
             <h2 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">Your creative feed</h2>
           </div>
 
