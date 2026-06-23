@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react'
+import {
+  Heart,
+  MessageCircle,
+  Send,
+  Bookmark,
+  MoreHorizontal,
+} from 'lucide-react'
 import { useSocial } from './SocialContext'
 import CommentsModal from './CommentsModal'
 
 function PostCard({ post, index }) {
   const [showComments, setShowComments] = useState(false)
+
   const { likePost, currentUser } = useSocial()
 
   const handleLike = async () => {
@@ -18,16 +25,24 @@ function PostCard({ post, index }) {
   }
 
   const username = post.user?.username || post.user?.name || 'unknown'
-  const avatar = post.user?.avatar || username.charAt(0).toUpperCase()
+
+  const avatar =
+    post.user?.avatar ||
+    username.charAt(0).toUpperCase()
 
   return (
     <>
       <motion.article
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut', delay: index * 0.04 }}
+        transition={{
+          duration: 0.35,
+          ease: 'easeOut',
+          delay: index * 0.04,
+        }}
         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
@@ -38,8 +53,11 @@ function PostCard({ post, index }) {
               <p className="truncate text-sm font-semibold text-slate-950">
                 {username}
               </p>
+
               <p className="text-xs text-slate-500">
-                {new Date(post.timestamp).toLocaleDateString()}
+                {post.timestamp
+                  ? new Date(post.timestamp).toLocaleDateString()
+                  : ''}
               </p>
             </div>
           </div>
@@ -49,24 +67,33 @@ function PostCard({ post, index }) {
           </button>
         </div>
 
-        <div className="w-full bg-slate-100">
-          <img
-            src={post.image}
-            alt={post.caption || 'Post'}
-            className="aspect-square w-full object-cover"
-          />
-        </div>
+        {/* Image */}
+        {post.image && (
+          <div className="w-full bg-slate-100">
+            <img
+              src={post.image}
+              alt={post.caption || 'Post'}
+              className="aspect-square w-full object-cover"
+            />
+          </div>
+        )}
 
+        {/* Actions */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleLike}
                 className={`transition ${
-                  post.liked ? 'text-red-500' : 'text-slate-900 hover:text-red-500'
+                  post.liked
+                    ? 'text-red-500'
+                    : 'text-slate-900 hover:text-red-500'
                 }`}
               >
-                <Heart size={25} fill={post.liked ? 'currentColor' : 'none'} />
+                <Heart
+                  size={25}
+                  fill={post.liked ? 'currentColor' : 'none'}
+                />
               </button>
 
               <button
@@ -86,31 +113,38 @@ function PostCard({ post, index }) {
             </button>
           </div>
 
+          {/* Likes */}
           <p className="mt-3 text-sm font-semibold text-slate-950">
-            {post.likes} {post.likes === 1 ? 'like' : 'likes'}
+            {post.likes || 0} {(post.likes || 0) === 1 ? 'like' : 'likes'}
           </p>
 
+          {/* Caption */}
           {post.caption && (
             <p className="mt-2 text-sm leading-relaxed text-slate-800">
-              <span className="font-semibold text-slate-950">{username}</span>{' '}
+              <span className="font-semibold text-slate-950">
+                {username}
+              </span>{' '}
               {post.caption}
             </p>
           )}
 
+          {/* Comments */}
           <button
             onClick={() => setShowComments(true)}
             className="mt-2 text-sm text-slate-500 hover:text-slate-800"
           >
-            View comments
+            View {post.comments || 0} comments
           </button>
         </div>
       </motion.article>
 
-      <CommentsModal
-        isOpen={showComments}
-        onClose={() => setShowComments(false)}
-        post={post}
-      />
+      {showComments && (
+        <CommentsModal
+          isOpen={showComments}
+          onClose={() => setShowComments(false)}
+          post={post}
+        />
+      )}
     </>
   )
 }
