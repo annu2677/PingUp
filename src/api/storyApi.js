@@ -10,13 +10,10 @@ export const getStories = async () => {
   return response.json();
 };
 
-export const createStory = async (storyData) => {
+export const createStory = async (formData) => {
   const response = await fetch(`${API_URL}/stories`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(storyData),
+    body: formData,
   });
 
   if (!response.ok) {
