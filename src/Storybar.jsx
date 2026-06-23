@@ -1,61 +1,142 @@
-import { motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
-import { useSocial } from './SocialContext'
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { useAuth } from "./AuthContext";
+import { getStories, createStory } from "./api/storyApi";
 
-function Storybar() {
-  const { users, currentUser } = useSocial()
+function StoryBar() {
+  const { user } = useAuth();
 
-  const storyUsers = users?.slice(0, 8) || []
+  const [stories, setStories] = useState([]);
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const StoryItem = ({ user, index, isAddStory = false }) => {
-    const username = isAddStory
-      ? 'Your story'
-      : user?.username || user?.name || 'user'
+  const loadStories = async () => {
+    try {
+      const data = await getStories();
+      setStories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error loading stories:", error);
+    }
+  };
 
-    const avatarLetter = username.charAt(0).toUpperCase()
+  useEffect(() => {
+    loadStories();
+  }, []);
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.35, delay: index * 0.04 }}
-        whileTap={{ scale: 0.94 }}
-        className="flex w-[72px] shrink-0 cursor-pointer flex-col items-center gap-2"
-      >
-        <div className="rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-orange-400 p-[2px]">
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-slate-100 text-lg font-bold text-slate-700">
-            {isAddStory ? (
-              <Plus size={24} />
-            ) : user?.avatar || user?.profilePicture ? (
+  const handleAddStory = async () => {
+    const mediaUrl = prompt("Paste image/video URL for your story:");
+
+    if (!mediaUrl) return;
+
+    if (!user) {
+      alert("Please login first");
+      return;
+    }
+
+    const newStory = {
+      userId: user.id || user._id,
+      username: user.name || user.username || "User",
+      userAvatar:
+        user.profilePic ||
+        user.avatar ||
+        "https://ui-avatars.com/api/?name=User",
+      mediaUrl,
+      mediaType: mediaUrl.includes(".mp4") ? "video" : "image",
+    };
+
+    try {
+      setLoading(true);
+      await createStory(newStory);
+      await loadStories();
+    } catch (error) {
+      console.error("Error creating story:", error);
+      alert("Story could not be added");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">
+        <div className="flex gap-4">
+
+          <div
+            onClick={handleAddStory}
+            className="flex flex-col items-center cursor-pointer min-w-[70px]"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center">
+              <Plus size={26} />
+            </div>
+            <p className="text-xs mt-1">
+              {loading ? "Adding..." : "Your Story"}
+            </p>
+          </div>
+
+          {stories.map((story) => (
+            <div
+              key={story.id}
+              onClick={() => setSelectedStory(story)}
+              className="flex flex-col items-center cursor-pointer min-w-[70px]"
+            >
+              <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+                <img
+                  src={story.userAvatar}
+                  alt={story.username}
+                  className="w-full h-full rounded-full object-cover border-2 border-white"
+                />
+              </div>
+              <p className="text-xs mt-1 max-w-[70px] truncate">
+                {story.username}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selectedStory && (
+        <div
+          onClick={() => setSelectedStory(null)}
+          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+        >
+          <div className="relative w-full max-w-md h-full flex items-center justify-center">
+            <button
+              onClick={() => setSelectedStory(null)}
+              className="absolute top-5 right-5 text-white text-3xl z-50"
+            >
+              ×
+            </button>
+
+            <div className="absolute top-5 left-5 flex items-center gap-3 z-50">
               <img
-                src={user.avatar || user.profilePicture}
-                alt={username}
-                className="h-full w-full object-cover"
+                src={selectedStory.userAvatar}
+                alt={selectedStory.username}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <span className="text-white font-semibold">
+                {selectedStory.username}
+              </span>
+            </div>
+
+            {selectedStory.mediaType === "video" ? (
+              <video
+                src={selectedStory.mediaUrl}
+                controls
+                autoPlay
+                className="max-h-full max-w-full object-contain"
               />
             ) : (
-              avatarLetter
+              <img
+                src={selectedStory.mediaUrl}
+                alt="story"
+                className="max-h-full max-w-full object-contain"
+              />
             )}
           </div>
         </div>
-
-        <span className="w-full truncate text-center text-xs font-medium text-slate-600">
-          {isAddStory ? 'Your story' : username}
-        </span>
-      </motion.div>
-    )
-  }
-
-  return (
-    <div className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
-        <StoryItem isAddStory index={0} user={currentUser} />
-
-        {storyUsers.map((user, index) => (
-          <StoryItem key={user.id || index} user={user} index={index + 1} />
-        ))}
-      </div>
-    </div>
-  )
+      )}
+    </>
+  );
 }
 
-export default Storybar
+export default StoryBar;
