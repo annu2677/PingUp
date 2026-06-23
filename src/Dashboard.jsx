@@ -7,7 +7,6 @@ import Sidebar from './Sidebar'
 import Feed from './Feed'
 import RightPanel from './RightPanel'
 import CreatePostModal from './CreatePostModal'
-import DebugPosts from './DebugPosts'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -15,76 +14,59 @@ export default function Dashboard() {
   const location = useLocation()
   const [showCreatePost, setShowCreatePost] = useState(false)
 
-  const currentPage = location.pathname === '/' ? 'home' :
-                     location.pathname.slice(1) // Remove leading slash
-
-  const handlePageChange = (page) => {
-    if (page === 'home') {
-      navigate('/')
-    } else {
-      navigate(`/${page}`)
-    }
-  }
+  const currentPage = location.pathname === '/' ? 'home' : location.pathname.slice(1)
 
   const renderCurrentPage = () => {
     if (location.pathname === '/') {
       return (
-        <main className="flex-1 flex flex-col xl:flex-row gap-6 px-6 py-6">
-          <div className="flex-1 min-w-0">
+        <main className="relative z-10 flex-1 px-3 py-4 sm:px-5 lg:px-6">
+          <div className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,640px)_320px] xl:items-start">
             <Feed />
-          </div>
-          <div className="hidden xl:block xl:w-[320px]">
-            <RightPanel user={user} />
+            <aside className="hidden xl:block sticky top-6">
+              <RightPanel user={user} />
+            </aside>
           </div>
         </main>
       )
     }
-    return null // Other pages are handled by separate routes
+
+    return null
   }
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex transition-all duration-500"
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="min-h-screen bg-slate-100 flex"
     >
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-purple-300/20 blur-3xl" />
-        <div className="absolute right-8 top-44 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
-        <div className="absolute left-1/2 bottom-0 h-80 w-80 -translate-x-1/2 rounded-full bg-pink-300/20 blur-3xl" />
-      </div>
-
       <Sidebar
         user={user}
         onLogout={logout}
         currentPage={currentPage}
       />
 
-      <div className="flex-1 flex flex-col">
+      <div className="min-w-0 flex-1">
         {renderCurrentPage()}
       </div>
 
-      {/* Floating Action Button for Create Post */}
       {location.pathname === '/' && (
         <motion.button
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => setShowCreatePost(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-shadow z-40"
+          className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-xl transition hover:bg-slate-800 sm:bottom-7 sm:right-7"
         >
           <Plus size={24} />
         </motion.button>
       )}
 
-      {/* Create Post Modal */}
       <CreatePostModal
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
       />
-      <DebugPosts />
     </motion.div>
   )
 }
