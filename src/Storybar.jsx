@@ -5,69 +5,56 @@ import { useSocial } from './SocialContext'
 function Storybar() {
   const { users, currentUser } = useSocial()
 
-  // Get a subset of users for stories (excluding current user)
-  const storyUsers = users.slice(0, 6)
+  const storyUsers = users?.slice(0, 8) || []
 
-  const StoryItem = ({ user, index, isAddStory = false }) => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ scale: 1.1, rotate: 2 }}
-      whileTap={{ scale: 0.95 }}
-      className="flex flex-col items-center gap-2 cursor-pointer group"
-    >
-      <div className={`relative ${isAddStory ? 'w-16 h-16' : 'w-16 h-16'} rounded-full p-[3px] ${
-        isAddStory
-          ? 'bg-gradient-to-tr from-gray-400 to-gray-600'
-          : 'bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500'
-      } shadow-lg group-hover:shadow-xl transition-shadow`}>
-        {isAddStory ? (
-          <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
-            <Plus size={24} className="text-gray-600" />
-          </div>
-        ) : (
-          <div className="w-full h-full rounded-full bg-white overflow-hidden">
-            <img
-              src={`https://images.unsplash.com/photo-${150000 + index * 100000}?w=64&h=64&fit=crop&crop=face`}
-              alt={user.username}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+  const StoryItem = ({ user, index, isAddStory = false }) => {
+    const username = isAddStory
+      ? 'Your story'
+      : user?.username || user?.name || 'user'
 
-        {/* Story Ring Indicator */}
-        {!isAddStory && (
-          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center border-2 border-white">
-            <div className="w-2 h-2 bg-white rounded-full"></div>
-          </div>
-        )}
-      </div>
+    const avatarLetter = username.charAt(0).toUpperCase()
 
-      <span className="text-xs text-gray-600 font-medium truncate max-w-16 text-center">
-        {isAddStory ? 'Your story' : user.username.split('_').join(' ')}
-      </span>
-    </motion.div>
-  )
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35, delay: index * 0.04 }}
+        whileTap={{ scale: 0.94 }}
+        className="flex w-[72px] shrink-0 cursor-pointer flex-col items-center gap-2"
+      >
+        <div className="rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-orange-400 p-[2px]">
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-slate-100 text-lg font-bold text-slate-700">
+            {isAddStory ? (
+              <Plus size={24} />
+            ) : user?.avatar || user?.profilePicture ? (
+              <img
+                src={user.avatar || user.profilePicture}
+                alt={username}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              avatarLetter
+            )}
+          </div>
+        </div>
+
+        <span className="w-full truncate text-center text-xs font-medium text-slate-600">
+          {isAddStory ? 'Your story' : username}
+        </span>
+      </motion.div>
+    )
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="relative flex gap-6 mb-10 overflow-x-auto pb-2 px-4 scrollbar-hide"
-    >
-      {/* Add Story */}
-      <StoryItem isAddStory={true} index={0} />
+    <div className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
+        <StoryItem isAddStory index={0} user={currentUser} />
 
-      {/* User Stories */}
-      {storyUsers.map((user, index) => (
-        <StoryItem key={user.id} user={user} index={index + 1} />
-      ))}
-
-      {/* Gradient fade on the right */}
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none" />
-    </motion.div>
+        {storyUsers.map((user, index) => (
+          <StoryItem key={user.id || index} user={user} index={index + 1} />
+        ))}
+      </div>
+    </div>
   )
 }
 
