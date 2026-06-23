@@ -1,6 +1,8 @@
 package com.annoaja.backend.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,7 +12,6 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Story {
 
     @Id
@@ -21,7 +22,7 @@ public class Story {
     private String userAvatar;
 
     private String mediaUrl;
-    private String mediaType; // image or video
+    private String mediaType;
 
     private Instant createdAt;
     private Instant expiresAt;

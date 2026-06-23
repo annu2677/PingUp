@@ -10,7 +10,5 @@ public interface StoryRepository extends MongoRepository<Story, String> {
 
     List<Story> findByExpiresAtAfterOrderByCreatedAtDesc(Instant now);
 
-    List<Story> findByUserIdAndExpiresAtAfterOrderByCreatedAtDesc(String userId, Instant now);
-
     void deleteByExpiresAtBefore(Instant now);
 }

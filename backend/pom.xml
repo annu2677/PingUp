@@ -84,6 +84,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.39.0</version>
+        </dependency>
+
 <!--        &lt;!&ndash; Dotenv for reading .env file &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>me.paulschwarz</groupId>-->
