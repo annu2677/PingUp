@@ -15,6 +15,7 @@ function StoryBar() {
   const loadStories = async () => {
     try {
       const data = await getStories();
+      console.log("STORIES FROM BACKEND:", data);
       setStories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading stories:", error);
@@ -64,7 +65,7 @@ function StoryBar() {
       event.target.value = "";
     }
   };
-
+  console.log("CURRENT STORIES:", stories);
   return (
     <>
       <div className="w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">
@@ -93,7 +94,10 @@ function StoryBar() {
           {stories.map((story) => (
             <div
               key={story.id}
-              onClick={() => setSelectedStory(story)}
+              onClick={() => {
+                       console.log("CLICKED STORY:", story);
+                        setSelectedStory(story);
+                     }}
               className="flex flex-col items-center cursor-pointer min-w-[70px]"
             >
               <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
