@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Settings, Grid } from 'lucide-react'
+import { Settings, Grid, X } from 'lucide-react'
 import { useSocial } from './SocialContext'
 import { useAuth } from './AuthContext'
-import { getUserById } from './api/userApi'
+import { getUserById, updateUserProfile } from './api/userApi'
 
 export default function Profile() {
   const { posts } = useSocial()
@@ -12,22 +12,79 @@ export default function Profile() {
   const [profileUser, setProfileUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editUsername, setEditUsername] = useState('')
+  const [editBio, setEditBio] = useState('')
+  const [editProfilePicture, setEditProfilePicture] = useState('')
+  const [saving, setSaving] = useState(false)
+
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        if (!currentUser?.id) return
-
-        const data = await getUserById(currentUser.id)
-        setProfileUser(data)
-      } catch (error) {
-        console.error('Profile loading error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadProfile()
   }, [currentUser?.id])
+
+  const loadProfile = async () => {
+    try {
+      if (!currentUser?.id) return
+
+      const data = await getUserById(currentUser.id)
+      setProfileUser(data)
+    } catch (error) {
+      console.error('Profile loading error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openEditModal = () => {
+    setEditUsername(profileUser.username || '')
+    setEditBio(profileUser.bio || '')
+    setEditProfilePicture(profileUser.profilePicture || '')
+    setShowEditModal(true)
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+
+    reader.onloadend = () => {
+      setEditProfilePicture(reader.result)
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveProfile = async () => {
+    try {
+      setSaving(true)
+
+      const updatedUser = await updateUserProfile(profileUser.id, {
+        username: editUsername,
+        bio: editBio,
+        profilePicture: editProfilePicture,
+      })
+
+      setProfileUser(updatedUser)
+
+      const oldUser = JSON.parse(localStorage.getItem('currentUser'))
+
+      const newLocalUser = {
+        ...oldUser,
+        username: updatedUser.username,
+        profilePicture: updatedUser.profilePicture,
+      }
+
+      localStorage.setItem('currentUser', JSON.stringify(newLocalUser))
+
+      setShowEditModal(false)
+    } catch (error) {
+      console.error('Update profile error:', error)
+      alert(error.message || 'Failed to update profile')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading) {
     return <div className="p-10 text-center">Loading profile...</div>
@@ -68,7 +125,10 @@ export default function Profile() {
               </h1>
 
               <div className="flex gap-2 justify-center md:justify-start">
-                <button className="px-4 py-1 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 transition-colors">
+                <button
+                  onClick={openEditModal}
+                  className="px-4 py-1 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                >
                   Edit profile
                 </button>
 
@@ -150,6 +210,80 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-semibold">Edit profile</h2>
+
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center mb-5">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 overflow-hidden flex items-center justify-center text-white text-3xl font-bold mb-3">
+                {editProfilePicture ? (
+                  <img
+                    src={editProfilePicture}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  editUsername?.charAt(0).toUpperCase() || 'U'
+                )}
+              </div>
+
+              <label className="cursor-pointer text-sm font-semibold text-blue-600">
+                Change profile photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-1">
+                Username
+              </label>
+              <input
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Username"
+              />
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-semibold mb-1">
+                Bio
+              </label>
+              <textarea
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                rows="3"
+                className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Write something about yourself..."
+              />
+            </div>
+
+            <button
+              onClick={handleSaveProfile}
+              disabled={saving}
+              className="w-full rounded-lg bg-slate-950 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
