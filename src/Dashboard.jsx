@@ -52,7 +52,7 @@ export default function Dashboard() {
       </div>
 
       {location.pathname === '/' && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white px-4 py-3 shadow-lg xl:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white px-4 py-3 shadow-lg xl:hidden">
           <button
             onClick={() => navigate('/profile')}
             className="flex flex-col items-center gap-1 text-xs font-medium text-slate-700"
