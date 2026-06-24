@@ -2,14 +2,37 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Grid, Bookmark, Heart, MessageCircle, Share, MoreHorizontal } from 'lucide-react'
 import { useSocial } from './SocialContext'
+import { useAuth } from './AuthContext'
+import { getUserById } from './api/userApi'
 
 export default function Profile({ userId }) {
-  const { posts, users, currentUser, followUser, unfollowUser } = useSocial()
+  const [profileUser, setProfileUser] = useState(null)
+  const { posts } = useSocial()
+  const { user: currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState('posts')
   const [isFollowing, setIsFollowing] = useState(false)
 
   // For demo purposes, if no userId is provided, show current user profile
-  const profileUser = userId ? users.find(u => u.id === userId) : currentUser
+  useEffect(() => {
+  loadProfile()
+  }, [])
+
+  const loadProfile = async () => {
+  try {
+    const data = await getUserById(currentUser.id)
+    setProfileUser(data)
+  } catch (err) {
+    console.error(err)
+    }
+  }
+
+  if (!profileUser) {
+   return (
+    <div className="p-10 text-center">
+      Loading profile...
+    </div>
+   )
+  }
   const userPosts = posts.filter(post => post.user.id === profileUser.id)
   const isOwnProfile = profileUser.id === currentUser.id
 
