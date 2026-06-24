@@ -143,28 +143,42 @@ function Storybar() {
             className="hidden"
           />
 
-          {groupedStories.map((group) => (
-            <div
-              key={group.userId || group.username}
-              onClick={() => setActiveUserStories(group)}
-              className="flex min-w-[74px] cursor-pointer flex-col items-center"
-            >
-              <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                <img
-                  src={
-                    group.userAvatar ||
-                    `https://ui-avatars.com/api/?name=${group.username || "User"}`
-                  }
-                  alt={group.username}
-                  className="h-full w-full rounded-full border-2 border-white object-cover"
-                />
-              </div>
+          {groupedStories.map((group) => {
+  const seenStories = JSON.parse(localStorage.getItem("seenStories") || "[]");
 
-              <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
-                {group.username}
-              </p>
-            </div>
-          ))}
+  const hasUnseenStory = group.stories.some(
+    (story) => !seenStories.includes(story.id)
+  );
+
+  return (
+    <div
+      key={group.userId || group.username}
+      onClick={() => setActiveUserStories(group)}
+      className="flex min-w-[74px] cursor-pointer flex-col items-center"
+    >
+      <div
+        className={`h-16 w-16 rounded-full p-[2px] ${
+          hasUnseenStory
+            ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"
+            : "bg-slate-300"
+        }`}
+      >
+        <img
+          src={
+            group.userAvatar ||
+            `https://ui-avatars.com/api/?name=${group.username || "User"}`
+          }
+          alt={group.username}
+          className="h-full w-full rounded-full border-2 border-white object-cover"
+        />
+      </div>
+
+      <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
+        {group.username}
+      </p>
+     </div>
+     );
+    })}
         </div>
       </div>
 
@@ -176,9 +190,13 @@ function Storybar() {
         onPost={uploadStory}
       />
 
-      <StoryViewer
+            <StoryViewer
         activeUserStories={activeUserStories}
-        onClose={() => setActiveUserStories(null)}
+        onClose={() => {
+          setActiveUserStories(null);
+          loadStories();
+        }}
+        onStoryDeleted={loadStories}
       />
     </>
   );

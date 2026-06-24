@@ -22,3 +22,13 @@ export const createStory = async (formData) => {
 
   return response.json();
 };
+
+export const deleteStory = async (storyId) => {
+  const response = await fetch(`${API_URL}/stories/${storyId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete story");
+  }
+};

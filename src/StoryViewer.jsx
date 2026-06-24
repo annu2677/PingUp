@@ -1,14 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
+import { useAuth } from "./AuthContext";
+import { deleteStory } from "./api/storyApi";
 
-function StoryViewer({ activeUserStories, onClose }) {
+function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
+  const { user } = useAuth();
+
   const [storyIndex, setStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [deleting, setDeleting] = useState(false);
 
   const videoRef = useRef(null);
 
   const stories = activeUserStories?.stories || [];
   const currentStory = stories[storyIndex];
+
+  const currentUserId = user?.id || user?._id;
+  const isOwnStory = currentStory?.userId === currentUserId;
+
+  const markStoryAsSeen = (storyId) => {
+    const seen = JSON.parse(localStorage.getItem("seenStories") || "[]");
+
+    if (!seen.includes(storyId)) {
+      localStorage.setItem("seenStories", JSON.stringify([...seen, storyId]));
+    }
+  };
 
   const closeViewer = () => {
     setStoryIndex(0);
@@ -32,10 +48,46 @@ function StoryViewer({ activeUserStories, onClose }) {
     }
   };
 
+  const handleDeleteStory = async () => {
+    if (!currentStory?.id) return;
+
+    const confirmDelete = window.confirm("Delete this story?");
+    if (!confirmDelete) return;
+
+    try {
+      setDeleting(true);
+
+      await deleteStory(currentStory.id);
+
+      if (onStoryDeleted) {
+        await onStoryDeleted();
+      }
+
+      if (stories.length === 1) {
+        closeViewer();
+      } else if (storyIndex === stories.length - 1) {
+        setStoryIndex((prev) => prev - 1);
+      } else {
+        setStoryIndex((prev) => prev);
+      }
+    } catch (error) {
+      console.error("Error deleting story:", error);
+      alert("Story could not be deleted");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     setStoryIndex(0);
     setProgress(0);
   }, [activeUserStories]);
+
+  useEffect(() => {
+    if (currentStory?.id) {
+      markStoryAsSeen(currentStory.id);
+    }
+  }, [currentStory?.id]);
 
   useEffect(() => {
     if (!currentStory) return;
@@ -74,7 +126,7 @@ function StoryViewer({ activeUserStories, onClose }) {
   if (!activeUserStories || !currentStory) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black text-white">
+    <div className="fixed inset-0 z-[99999] bg-black text-white">
       <div className="absolute left-0 right-0 top-0 z-30 px-3 pt-4">
         <div className="mb-4 flex gap-1">
           {stories.map((story, index) => (
@@ -120,9 +172,21 @@ function StoryViewer({ activeUserStories, onClose }) {
             </div>
           </div>
 
-          <button onClick={closeViewer}>
-            <X size={30} />
-          </button>
+          <div className="flex items-center gap-3">
+            {isOwnStory && (
+              <button
+                onClick={handleDeleteStory}
+                disabled={deleting}
+                className="rounded-full bg-white/15 p-2 text-white disabled:opacity-60"
+              >
+                <Trash2 size={21} />
+              </button>
+            )}
+
+            <button onClick={closeViewer}>
+              <X size={30} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,13 +216,11 @@ function StoryViewer({ activeUserStories, onClose }) {
       <button
         onClick={previousStory}
         className="absolute left-0 top-0 h-full w-1/2"
-        aria-label="Previous story"
       />
 
       <button
         onClick={nextStory}
         className="absolute right-0 top-0 h-full w-1/2"
-        aria-label="Next story"
       />
     </div>
   );
