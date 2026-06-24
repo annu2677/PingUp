@@ -19,12 +19,15 @@ function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
   const isOwnStory = currentStory?.userId === currentUserId;
 
   const markStoryAsSeen = (storyId) => {
-    const seen = JSON.parse(localStorage.getItem("seenStories") || "[]");
+        if (!currentUserId || !storyId) return;
 
-    if (!seen.includes(storyId)) {
-      localStorage.setItem("seenStories", JSON.stringify([...seen, storyId]));
-    }
-  };
+        const key = `seenStories_${currentUserId}`;
+        const seen = JSON.parse(localStorage.getItem(key) || "[]");
+
+          if (!seen.includes(storyId)) {
+             localStorage.setItem(key, JSON.stringify([...seen, storyId]));
+      }
+    };
 
   const closeViewer = () => {
     setStoryIndex(0);

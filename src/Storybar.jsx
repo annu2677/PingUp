@@ -144,25 +144,21 @@ function Storybar() {
           />
 
           {groupedStories.map((group) => {
-  const seenStories = JSON.parse(localStorage.getItem("seenStories") || "[]");
+              const currentUserId = user?.id || user?._id;
+              const seenKey = `seenStories_${currentUserId}`;
+              const seenStories = JSON.parse(localStorage.getItem(seenKey) || "[]");
 
-  const hasUnseenStory = group.stories.some(
-    (story) => !seenStories.includes(story.id)
-  );
+              const hasUnseenStory = group.stories.some((story) => !seenStories.includes(story.id));
 
-  return (
-    <div
-      key={group.userId || group.username}
-      onClick={() => setActiveUserStories(group)}
-      className="flex min-w-[74px] cursor-pointer flex-col items-center"
-    >
-      <div
-        className={`h-16 w-16 rounded-full p-[2px] ${
-          hasUnseenStory
-            ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"
-            : "bg-slate-300"
-        }`}
-      >
+            return (
+            <div
+              key={group.userId || group.username}
+              onClick={() => setActiveUserStories(group)}
+              className="flex min-w-[74px] cursor-pointer flex-col items-center"
+            >
+            <div
+              className={`h-16 w-16 rounded-full p-[2px] ${hasUnseenStory? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600": "bg-slate-300"}`}
+            >
         <img
           src={
             group.userAvatar ||
