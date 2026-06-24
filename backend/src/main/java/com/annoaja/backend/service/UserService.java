@@ -14,11 +14,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UserService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService
-    ) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -36,13 +32,7 @@ public class UserService {
 
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail());
 
-        return new AuthResponse(
-                savedUser.getId(),
-                savedUser.getUsername(),
-                savedUser.getEmail(),
-                savedUser.getProfilePicture(),
-                token
-        );
+        return new AuthResponse(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getProfilePicture(), token);
     }
 
     public AuthResponse loginUser(String email, String password) {
@@ -55,12 +45,15 @@ public class UserService {
 
         String token = jwtService.generateToken(user.getId(), user.getEmail());
 
-        return new AuthResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getProfilePicture(),
-                token
-        );
+        return new AuthResponse(user.getId(), user.getUsername(), user.getEmail(), user.getProfilePicture(), token);
+    }
+
+    public User getUserById(String id) {
+
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPassword(null);
+
+        return user;
     }
 }

@@ -42,8 +42,20 @@ public class UserController {
         try {
             AuthResponse response = userService.loginUser(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
+        }
+        catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUser(@PathVariable String id) {
+
+        try {
+            return ResponseEntity.ok(userService.getUserById(id));
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
     }
 }
