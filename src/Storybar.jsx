@@ -1,21 +1,26 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { getStories, createStory } from "./api/storyApi";
+import StoryPreviewModal from "./StoryPreviewModal";
+import StoryViewer from "./StoryViewer";
 
-function StoryBar() {
+function Storybar() {
   const { user } = useAuth();
 
   const fileInputRef = useRef(null);
 
   const [stories, setStories] = useState([]);
-  const [selectedStory, setSelectedStory] = useState(null);
+  const [activeUserStories, setActiveUserStories] = useState(null);
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   const [loading, setLoading] = useState(false);
 
   const loadStories = async () => {
     try {
       const data = await getStories();
-      console.log("STORIES FROM BACKEND:", data);
       setStories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading stories:", error);
@@ -26,6 +31,34 @@ function StoryBar() {
     loadStories();
   }, []);
 
+  const groupedStories = useMemo(() => {
+    const map = new Map();
+
+    stories.forEach((story) => {
+      const key = story.userId || story.username;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          userId: story.userId,
+          username: story.username || "User",
+          userAvatar:
+            story.userAvatar ||
+            `https://ui-avatars.com/api/?name=${story.username || "User"}`,
+          stories: [],
+        });
+      }
+
+      map.get(key).stories.push(story);
+    });
+
+    return Array.from(map.values()).map((group) => ({
+      ...group,
+      stories: group.stories.sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      ),
+    }));
+  }, [stories]);
+
   const handleChooseFile = () => {
     if (!user) {
       alert("Please login first");
@@ -35,51 +68,70 @@ function StoryBar() {
     fileInputRef.current.click();
   };
 
-  const handleFileChange = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
 
     if (!file) return;
 
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+
+    event.target.value = "";
+  };
+
+  const cancelPreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
+
+  const uploadStory = async () => {
+    if (!selectedFile || !user) return;
+
     const formData = new FormData();
 
-    formData.append("file", file);
+    formData.append("file", selectedFile);
     formData.append("userId", user.id || user._id);
     formData.append("username", user.name || user.username || "User");
     formData.append(
       "userAvatar",
       user.profilePic ||
         user.avatar ||
-        `https://ui-avatars.com/api/?name=${user.name || "User"}`
+        `https://ui-avatars.com/api/?name=${user.name || user.username || "User"}`
     );
 
     try {
       setLoading(true);
+
       await createStory(formData);
       await loadStories();
-      alert("Story added successfully");
+
+      cancelPreview();
     } catch (error) {
       console.error("Error uploading story:", error);
       alert("Story upload failed");
     } finally {
       setLoading(false);
-      event.target.value = "";
     }
   };
-  console.log("CURRENT STORIES:", stories);
+
   return (
     <>
-      <div className="w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm">
+      <div className="mb-5 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
         <div className="flex gap-4">
           <div
             onClick={handleChooseFile}
-            className="flex flex-col items-center cursor-pointer min-w-[70px]"
+            className="flex min-w-[74px] cursor-pointer flex-col items-center"
           >
-            <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-slate-400 bg-slate-50">
               <Plus size={26} />
             </div>
 
-            <p className="text-xs mt-1">
-              {loading ? "Uploading..." : "Your Story"}
+            <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
+              {loading ? "Posting..." : "Your Story"}
             </p>
           </div>
 
@@ -91,76 +143,45 @@ function StoryBar() {
             className="hidden"
           />
 
-          {stories.map((story) => (
+          {groupedStories.map((group) => (
             <div
-              key={story.id}
-              onClick={() => {
-                       console.log("CLICKED STORY:", story);
-                        setSelectedStory(story);
-                     }}
-              className="flex flex-col items-center cursor-pointer min-w-[70px]"
+              key={group.userId || group.username}
+              onClick={() => setActiveUserStories(group)}
+              className="flex min-w-[74px] cursor-pointer flex-col items-center"
             >
-              <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
                 <img
                   src={
-                    story.userAvatar ||
-                    `https://ui-avatars.com/api/?name=${story.username || "User"}`
+                    group.userAvatar ||
+                    `https://ui-avatars.com/api/?name=${group.username || "User"}`
                   }
-                  alt={story.username}
-                  className="w-full h-full rounded-full object-cover border-2 border-white"
+                  alt={group.username}
+                  className="h-full w-full rounded-full border-2 border-white object-cover"
                 />
               </div>
 
-              <p className="text-xs mt-1 max-w-[70px] truncate">
-                {story.username}
+              <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
+                {group.username}
               </p>
             </div>
           ))}
         </div>
       </div>
 
-      {selectedStory && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <button
-            onClick={() => setSelectedStory(null)}
-            className="absolute top-5 right-5 text-white z-50"
-          >
-            <X size={32} />
-          </button>
+      <StoryPreviewModal
+        previewUrl={previewUrl}
+        selectedFile={selectedFile}
+        loading={loading}
+        onCancel={cancelPreview}
+        onPost={uploadStory}
+      />
 
-          <div className="absolute top-5 left-5 flex items-center gap-3 z-50">
-            <img
-              src={
-                selectedStory.userAvatar ||
-                `https://ui-avatars.com/api/?name=${selectedStory.username || "User"}`
-              }
-              alt={selectedStory.username}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-
-            <span className="text-white font-semibold">
-              {selectedStory.username}
-            </span>
-          </div>
-
-          {selectedStory.mediaType === "video" ? (
-            <video
-              src={selectedStory.mediaUrl}
-              autoPlay
-              controls
-              className="max-w-full max-h-full object-contain"
-            />
-          ) : (
-            <img
-              src={selectedStory.mediaUrl}
-              alt="story"
-              className="max-w-full max-h-full object-contain"
-            />
-          )}
-        </div>
-      )}
+      <StoryViewer
+        activeUserStories={activeUserStories}
+        onClose={() => setActiveUserStories(null)}
+      />
     </>
   );
 }
 
-export default StoryBar;
+export default Storybar;
