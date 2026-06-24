@@ -35,6 +35,11 @@ export function SocialProvider({ children }) {
             username: post.username || post.user?.username || 'Unknown',
             name: post.name || post.user?.name || post.username || 'Unknown',
             avatar: post.avatar || post.user?.avatar || '',
+            profilePicture:
+              post.profilePicture ||
+              post.userProfilePicture ||
+              post.user?.profilePicture ||
+              '',
           }
 
           let likes = 0
@@ -64,6 +69,13 @@ export function SocialProvider({ children }) {
           const timestampValue =
             post.createdAt || post.timestamp || post.date || new Date()
 
+          const profilePicture =
+            postUser.profilePicture ||
+            post.profilePicture ||
+            post.userProfilePicture ||
+            post.user?.profilePicture ||
+            ''
+
           return {
             id: postId,
             user: {
@@ -75,7 +87,10 @@ export function SocialProvider({ children }) {
                 postUser.username?.charAt(0).toUpperCase() ||
                 postUser.name?.charAt(0).toUpperCase() ||
                 'U',
+              profilePicture,
             },
+            userProfilePicture: profilePicture,
+            profilePicture,
             image,
             caption,
             likes,
@@ -111,9 +126,17 @@ export function SocialProvider({ children }) {
         username: user.username,
         content: caption,
         imageUrl: image,
+        profilePicture: user.profilePicture || '',
+        userProfilePicture: user.profilePicture || '',
       }
 
       const savedPost = await savePost(backendPost)
+
+      const profilePicture =
+        savedPost.profilePicture ||
+        savedPost.userProfilePicture ||
+        user.profilePicture ||
+        ''
 
       const newPost = {
         id: savedPost.id || savedPost._id,
@@ -126,9 +149,12 @@ export function SocialProvider({ children }) {
             user.username?.charAt(0).toUpperCase() ||
             user.name?.charAt(0).toUpperCase() ||
             'U',
+          profilePicture,
         },
-        image: savedPost.imageUrl,
-        caption: savedPost.content,
+        userProfilePicture: profilePicture,
+        profilePicture,
+        image: savedPost.imageUrl || image,
+        caption: savedPost.content || caption,
         likes: 0,
         comments: 0,
         timestamp: savedPost.createdAt

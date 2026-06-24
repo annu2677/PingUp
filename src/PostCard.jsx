@@ -24,11 +24,17 @@ function PostCard({ post, index }) {
     await likePost(post.id)
   }
 
-  const username = post.user?.username || post.user?.name || 'unknown'
+  const username =
+    post.user?.username ||
+    post.user?.name ||
+    post.username ||
+    'unknown'
 
-  const avatar =
-    post.user?.avatar ||
-    username.charAt(0).toUpperCase()
+  const profilePicture =
+    post.user?.profilePicture ||
+    post.userProfilePicture ||
+    post.profilePicture ||
+    ''
 
   return (
     <>
@@ -42,11 +48,18 @@ function PostCard({ post, index }) {
         }}
         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
-              {avatar}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-sm font-bold text-white">
+              {profilePicture ? (
+                <img
+                  src={profilePicture}
+                  alt={username}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                username.charAt(0).toUpperCase()
+              )}
             </div>
 
             <div className="min-w-0">
@@ -67,7 +80,6 @@ function PostCard({ post, index }) {
           </button>
         </div>
 
-        {/* Image */}
         {post.image && (
           <div className="w-full bg-slate-100">
             <img
@@ -78,7 +90,6 @@ function PostCard({ post, index }) {
           </div>
         )}
 
-        {/* Actions */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -113,12 +124,10 @@ function PostCard({ post, index }) {
             </button>
           </div>
 
-          {/* Likes */}
           <p className="mt-3 text-sm font-semibold text-slate-950">
             {post.likes || 0} {(post.likes || 0) === 1 ? 'like' : 'likes'}
           </p>
 
-          {/* Caption */}
           {post.caption && (
             <p className="mt-2 text-sm leading-relaxed text-slate-800">
               <span className="font-semibold text-slate-950">
@@ -128,7 +137,6 @@ function PostCard({ post, index }) {
             </p>
           )}
 
-          {/* Comments */}
           <button
             onClick={() => setShowComments(true)}
             className="mt-2 text-sm text-slate-500 hover:text-slate-800"
