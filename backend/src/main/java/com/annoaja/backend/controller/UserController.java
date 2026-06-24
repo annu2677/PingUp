@@ -58,4 +58,14 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateProfile(@PathVariable String id, @RequestBody User updatedUser) {
+        try {
+            return ResponseEntity.ok(userService.updateProfile(id, updatedUser));
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        }
+    }
 }

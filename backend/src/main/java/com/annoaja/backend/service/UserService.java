@@ -56,4 +56,18 @@ public class UserService {
 
         return user;
     }
+
+    public User updateProfile(String id, User updatedUser) {
+
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setUsername(updatedUser.getUsername());
+        user.setBio(updatedUser.getBio());
+        user.setProfilePicture(updatedUser.getProfilePicture());
+
+        User savedUser = userRepository.save(user);
+        savedUser.setPassword(null);
+
+        return savedUser;
+    }
 }
