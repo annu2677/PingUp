@@ -19,6 +19,8 @@ public class Post {
 
     private String userId;
     private String username;
+    private String profilePicture;
+
     private String content;
     private String imageUrl;
 
