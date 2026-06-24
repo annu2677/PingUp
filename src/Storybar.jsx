@@ -37,18 +37,26 @@ function Storybar() {
     stories.forEach((story) => {
       const key = story.userId || story.username;
 
+      const profilePicture =
+        story.profilePicture ||
+        story.userProfilePicture ||
+        story.userAvatar ||
+        story.avatar ||
+        "";
+
       if (!map.has(key)) {
         map.set(key, {
           userId: story.userId,
           username: story.username || "User",
-          userAvatar:
-            story.userAvatar ||
-            `https://ui-avatars.com/api/?name=${story.username || "User"}`,
+          userAvatar: profilePicture,
           stories: [],
         });
       }
 
-      map.get(key).stories.push(story);
+      map.get(key).stories.push({
+        ...story,
+        userAvatar: profilePicture,
+      });
     });
 
     return Array.from(map.values()).map((group) => ({
@@ -91,17 +99,22 @@ function Storybar() {
   const uploadStory = async () => {
     if (!selectedFile || !user) return;
 
+    const username = user.username || user.name || "User";
+
+    const profilePicture =
+      user.profilePicture ||
+      user.profilePic ||
+      user.avatar ||
+      "";
+
     const formData = new FormData();
 
     formData.append("file", selectedFile);
     formData.append("userId", user.id || user._id);
-    formData.append("username", user.name || user.username || "User");
-    formData.append(
-      "userAvatar",
-      user.profilePic ||
-        user.avatar ||
-        `https://ui-avatars.com/api/?name=${user.name || user.username || "User"}`
-    );
+    formData.append("username", username);
+    formData.append("userAvatar", profilePicture);
+    formData.append("profilePicture", profilePicture);
+    formData.append("userProfilePicture", profilePicture);
 
     try {
       setLoading(true);
@@ -126,8 +139,16 @@ function Storybar() {
             onClick={handleChooseFile}
             className="flex min-w-[74px] cursor-pointer flex-col items-center"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-slate-400 bg-slate-50">
-              <Plus size={26} />
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-400 bg-slate-50">
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt={user.username || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Plus size={26} />
+              )}
             </div>
 
             <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
@@ -144,37 +165,51 @@ function Storybar() {
           />
 
           {groupedStories.map((group) => {
-              const currentUserId = user?.id || user?._id;
-              const seenKey = `seenStories_${currentUserId}`;
-              const seenStories = JSON.parse(localStorage.getItem(seenKey) || "[]");
+            const currentUserId = user?.id || user?._id;
+            const seenKey = `seenStories_${currentUserId}`;
+            const seenStories = JSON.parse(
+              localStorage.getItem(seenKey) || "[]"
+            );
 
-              const hasUnseenStory = group.stories.some((story) => !seenStories.includes(story.id));
+            const hasUnseenStory = group.stories.some(
+              (story) => !seenStories.includes(story.id)
+            );
+
+            const fallbackInitial =
+              group.username?.charAt(0).toUpperCase() || "U";
 
             return (
-            <div
-              key={group.userId || group.username}
-              onClick={() => setActiveUserStories(group)}
-              className="flex min-w-[74px] cursor-pointer flex-col items-center"
-            >
-            <div
-              className={`h-16 w-16 rounded-full p-[2px] ${hasUnseenStory? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600": "bg-slate-300"}`}
-            >
-        <img
-          src={
-            group.userAvatar ||
-            `https://ui-avatars.com/api/?name=${group.username || "User"}`
-          }
-          alt={group.username}
-          className="h-full w-full rounded-full border-2 border-white object-cover"
-        />
-      </div>
+              <div
+                key={group.userId || group.username}
+                onClick={() => setActiveUserStories(group)}
+                className="flex min-w-[74px] cursor-pointer flex-col items-center"
+              >
+                <div
+                  className={`h-16 w-16 rounded-full p-[2px] ${
+                    hasUnseenStory
+                      ? "bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"
+                      : "bg-slate-300"
+                  }`}
+                >
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-slate-900 text-white font-bold">
+                    {group.userAvatar ? (
+                      <img
+                        src={group.userAvatar}
+                        alt={group.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      fallbackInitial
+                    )}
+                  </div>
+                </div>
 
-      <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
-        {group.username}
-      </p>
-     </div>
-     );
-    })}
+                <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
+                  {group.username}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -186,7 +221,7 @@ function Storybar() {
         onPost={uploadStory}
       />
 
-            <StoryViewer
+      <StoryViewer
         activeUserStories={activeUserStories}
         onClose={() => {
           setActiveUserStories(null);

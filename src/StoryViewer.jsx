@@ -16,18 +16,30 @@ function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
   const currentStory = stories[storyIndex];
 
   const currentUserId = user?.id || user?._id;
-  const isOwnStory = currentStory?.userId === currentUserId;
+  const isOwnStory = String(currentStory?.userId) === String(currentUserId);
+
+  const profilePicture =
+    activeUserStories?.userAvatar ||
+    activeUserStories?.profilePicture ||
+    activeUserStories?.userProfilePicture ||
+    currentStory?.userAvatar ||
+    currentStory?.profilePicture ||
+    currentStory?.userProfilePicture ||
+    "";
+
+  const fallbackInitial =
+    activeUserStories?.username?.charAt(0).toUpperCase() || "U";
 
   const markStoryAsSeen = (storyId) => {
-        if (!currentUserId || !storyId) return;
+    if (!currentUserId || !storyId) return;
 
-        const key = `seenStories_${currentUserId}`;
-        const seen = JSON.parse(localStorage.getItem(key) || "[]");
+    const key = `seenStories_${currentUserId}`;
+    const seen = JSON.parse(localStorage.getItem(key) || "[]");
 
-          if (!seen.includes(storyId)) {
-             localStorage.setItem(key, JSON.stringify([...seen, storyId]));
-      }
-    };
+    if (!seen.includes(storyId)) {
+      localStorage.setItem(key, JSON.stringify([...seen, storyId]));
+    }
+  };
 
   const closeViewer = () => {
     setStoryIndex(0);
@@ -154,16 +166,17 @@ function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src={
-                activeUserStories.userAvatar ||
-                `https://ui-avatars.com/api/?name=${
-                  activeUserStories.username || "User"
-                }`
-              }
-              alt={activeUserStories.username}
-              className="h-10 w-10 rounded-full object-cover"
-            />
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-800 text-sm font-bold text-white">
+              {profilePicture ? (
+                <img
+                  src={profilePicture}
+                  alt={activeUserStories.username || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                fallbackInitial
+              )}
+            </div>
 
             <div>
               <p className="text-sm font-semibold">

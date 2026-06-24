@@ -12,7 +12,17 @@ export default function CreatePostModal({ isOpen, onClose }) {
 
   const savedUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
-  const username = currentUser?.username || currentUser?.name || savedUser?.username || savedUser?.name || 'user'
+  const username =
+    currentUser?.username ||
+    currentUser?.name ||
+    savedUser?.username ||
+    savedUser?.name ||
+    'user'
+
+  const profilePicture =
+    currentUser?.profilePicture ||
+    savedUser?.profilePicture ||
+    ''
 
   const avatarLetter = username.charAt(0).toUpperCase()
 
@@ -128,8 +138,16 @@ export default function CreatePostModal({ isOpen, onClose }) {
 
                   <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {avatarLetter}
+                      <div className="w-8 h-8 overflow-hidden bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        {profilePicture ? (
+                          <img
+                            src={profilePicture}
+                            alt={username}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          avatarLetter
+                        )}
                       </div>
 
                       <span className="font-semibold">{username}</span>
