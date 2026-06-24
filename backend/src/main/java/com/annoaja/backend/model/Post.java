@@ -17,6 +17,7 @@ public class Post {
     @Id
     private String id;
 
+    private String userId;
     private String username;
     private String content;
     private String imageUrl;
