@@ -1,5 +1,6 @@
-import { getPosts, createPost as savePost } from './api/postApi'
-import { toggleLike, getLikeCount, isPostLikedByUser } from './api/likeApi'
+import { getPosts, createPost as savePost } from './api/postApi.js'
+import { toggleLike, getLikeCount, isPostLikedByUser } from './api/likeApi.js'
+import { getCommentCount } from './api/commentApi.js'
 import { useAuth } from './AuthContext'
 import { createContext, useState, useContext, useEffect, useCallback } from 'react'
 
@@ -18,6 +19,7 @@ export function SocialProvider({ children }) {
 
     try {
       const rawResponse = await getPosts()
+
       const data = Array.isArray(rawResponse)
         ? rawResponse
         : rawResponse?.posts || rawResponse?.data || []
@@ -27,14 +29,17 @@ export function SocialProvider({ children }) {
       const formattedPosts = await Promise.all(
         data.map(async (post) => {
           const postId = post.id || post._id
+
           const postUser = post.user || {
             id: post.userId || post.user?._id || post._id || 1,
             username: post.username || post.user?.username || 'Unknown',
             name: post.name || post.user?.name || post.username || 'Unknown',
+            avatar: post.avatar || post.user?.avatar || '',
           }
 
           let likes = 0
           let liked = false
+          let commentCount = 0
 
           try {
             likes = await getLikeCount(postId)
@@ -48,9 +53,16 @@ export function SocialProvider({ children }) {
             console.error('Liked status failed for post:', postId, err)
           }
 
+          try {
+            commentCount = await getCommentCount(postId)
+          } catch (err) {
+            console.error('Comment count failed for post:', postId, err)
+          }
+
           const caption = post.content || post.caption || post.body || ''
           const image = post.imageUrl || post.image || ''
-          const timestampValue = post.createdAt || post.timestamp || post.date || new Date()
+          const timestampValue =
+            post.createdAt || post.timestamp || post.date || new Date()
 
           return {
             id: postId,
@@ -67,7 +79,7 @@ export function SocialProvider({ children }) {
             image,
             caption,
             likes,
-            comments: 0,
+            comments: Number(commentCount) || 0,
             timestamp: timestampValue ? new Date(timestampValue) : new Date(),
             liked,
             hashtags: [],
@@ -95,12 +107,14 @@ export function SocialProvider({ children }) {
 
     try {
       const backendPost = {
+        userId: user.id,
         username: user.username,
         content: caption,
         imageUrl: image,
       }
 
       const savedPost = await savePost(backendPost)
+
       const newPost = {
         id: savedPost.id || savedPost._id,
         user: {
@@ -117,7 +131,9 @@ export function SocialProvider({ children }) {
         caption: savedPost.content,
         likes: 0,
         comments: 0,
-        timestamp: new Date(savedPost.createdAt),
+        timestamp: savedPost.createdAt
+          ? new Date(savedPost.createdAt)
+          : new Date(),
         liked: false,
         hashtags: [],
         commentsList: [],
@@ -133,100 +149,127 @@ export function SocialProvider({ children }) {
   const likePost = async (postId) => {
     if (!user) return
 
-    // previousState must be declared in outer scope so catch handlers can access it
     let previousState = null
 
     try {
       console.log('likePost called for', postId, 'by user', user?.id)
 
-      // Optimistic update: flip liked and adjust likes count immediately
-      setPosts((prev) => {
-        return prev.map((post) => {
+      setPosts((prev) =>
+        prev.map((post) => {
           if (String(post.id) === String(postId)) {
             previousState = { ...post }
+
             const newLiked = !post.liked
-            const newLikes = newLiked ? post.likes + 1 : Math.max(0, post.likes - 1)
-            return { ...post, liked: newLiked, likes: newLikes }
+            const newLikes = newLiked
+              ? post.likes + 1
+              : Math.max(0, post.likes - 1)
+
+            return {
+              ...post,
+              liked: newLiked,
+              likes: newLikes,
+            }
           }
+
           return post
         })
-      })
+      )
 
       console.log('attempting toggleLike API call for', postId)
+
       let totalLikes = await toggleLike(postId, user.id)
+
       console.log('toggleLike response for', postId, totalLikes)
 
-      // Normalize response shapes: API may return number or object
       if (typeof totalLikes === 'object' && totalLikes !== null) {
-        totalLikes = (
-          totalLikes.count ?? totalLikes.Count ?? totalLikes.total ?? totalLikes.likes ?? totalLikes
-        ) || 0
+        totalLikes =
+          totalLikes.count ??
+          totalLikes.Count ??
+          totalLikes.total ??
+          totalLikes.likes ??
+          0
       }
 
-      // Ensure numeric
       totalLikes = Number(totalLikes) || 0
 
-      // Apply authoritative value from API
+      const finalLiked = await isPostLikedByUser(postId, user.id)
+
       setPosts((prev) =>
         prev.map((post) =>
           String(post.id) === String(postId)
             ? {
                 ...post,
                 likes: totalLikes,
-                liked: totalLikes > (previousState?.likes ?? 0),
+                liked: Boolean(finalLiked),
               }
             : post
         )
       )
     } catch (err) {
       console.error('Error toggling like for', postId, err)
-      // Retry once after a short delay
+
       try {
         await new Promise((res) => setTimeout(res, 350))
+
         console.log('Retrying toggleLike for', postId)
+
         let totalLikesRetry = await toggleLike(postId, user.id)
+
         if (typeof totalLikesRetry === 'object' && totalLikesRetry !== null) {
-          totalLikesRetry = (
-            totalLikesRetry.count ?? totalLikesRetry.Count ?? totalLikesRetry.total ?? totalLikesRetry.likes ?? totalLikesRetry
-          ) || 0
+          totalLikesRetry =
+            totalLikesRetry.count ??
+            totalLikesRetry.Count ??
+            totalLikesRetry.total ??
+            totalLikesRetry.likes ??
+            0
         }
+
         totalLikesRetry = Number(totalLikesRetry) || 0
+
+        const finalLikedRetry = await isPostLikedByUser(postId, user.id)
+
         setPosts((prev) =>
           prev.map((post) =>
             String(post.id) === String(postId)
-              ? { ...post, likes: totalLikesRetry, liked: totalLikesRetry > (previousState?.likes ?? 0) }
+              ? {
+                  ...post,
+                  likes: totalLikesRetry,
+                  liked: Boolean(finalLikedRetry),
+                }
               : post
           )
         )
+
         return
       } catch (err2) {
         console.error('Retry failed for toggleLike', postId, err2)
       }
 
-      // Revert optimistic update on final failure (no blocking alert)
       setPosts((prev) =>
-        prev.map((post) => (String(post.id) === String(postId) && previousState ? previousState : post))
+        prev.map((post) =>
+          String(post.id) === String(postId) && previousState
+            ? previousState
+            : post
+        )
       )
     }
   }
 
-  const addComment = (postId, text) => {
-    const newComment = {
-      id: Date.now(),
-      user: user,
-      text,
-      timestamp: new Date(),
-    }
+  const addComment = (postId, savedComment) => {
+    if (!user) return
 
     setPosts((prev) =>
       prev.map((post) => {
         if (String(post.id) === String(postId)) {
           return {
             ...post,
-            comments: post.comments + 1,
-            commentsList: [...post.commentsList, newComment],
+            comments: Number(post.comments || 0) + 1,
+            commentsList: savedComment
+              ? [...post.commentsList, savedComment]
+              : post.commentsList,
           }
         }
+
         return post
       })
     )
@@ -251,7 +294,9 @@ export function SocialProvider({ children }) {
   const followUser = (userId) => {
     setUsers((prev) =>
       prev.map((user) =>
-        user.id === userId ? { ...user, followers: user.followers + 1 } : user
+        user.id === userId
+          ? { ...user, followers: user.followers + 1 }
+          : user
       )
     )
   }
@@ -259,7 +304,9 @@ export function SocialProvider({ children }) {
   const unfollowUser = (userId) => {
     setUsers((prev) =>
       prev.map((user) =>
-        user.id === userId ? { ...user, followers: user.followers - 1 } : user
+        user.id === userId
+          ? { ...user, followers: user.followers - 1 }
+          : user
       )
     )
   }
@@ -273,7 +320,7 @@ export function SocialProvider({ children }) {
   }
 
   const getUserPosts = (userId) => {
-    return posts.filter((post) => post.user.id === userId)
+    return posts.filter((post) => String(post.user.id) === String(userId))
   }
 
   return (
@@ -301,8 +348,10 @@ export function SocialProvider({ children }) {
 
 export function useSocial() {
   const context = useContext(SocialContext)
+
   if (!context) {
     throw new Error('useSocial must be used within SocialProvider')
   }
+
   return context
 }
