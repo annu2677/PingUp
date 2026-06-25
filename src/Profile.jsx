@@ -1,16 +1,27 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Grid, X } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { useSocial } from './SocialContext'
 import { useAuth } from './AuthContext'
 import { getUserById, updateUserProfile } from './api/userApi'
+import {toggleFollow,getFollowersCount,getFollowingCount,isFollowingUser,} from './api/followApi'
 
 export default function Profile() {
   const { posts } = useSocial()
   const { user: currentUser } = useAuth()
+  const { userId } = useParams()
+
+  const profileId = userId || currentUser?.id
+  const isOwnProfile = String(profileId) === String(currentUser?.id)
 
   const [profileUser, setProfileUser] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const [followers, setFollowers] = useState(0)
+  const [following, setFollowing] = useState(0)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
 
   const [showEditModal, setShowEditModal] = useState(false)
   const [editUsername, setEditUsername] = useState('')
@@ -20,18 +31,57 @@ export default function Profile() {
 
   useEffect(() => {
     loadProfile()
-  }, [currentUser?.id])
+  }, [profileId, currentUser?.id])
 
   const loadProfile = async () => {
     try {
-      if (!currentUser?.id) return
+      setLoading(true)
 
-      const data = await getUserById(currentUser.id)
+      if (!profileId) return
+
+      const data = await getUserById(profileId)
       setProfileUser(data)
+
+      const followersCount = await getFollowersCount(profileId)
+      const followingCount = await getFollowingCount(profileId)
+
+      setFollowers(followersCount)
+      setFollowing(followingCount)
+
+      if (currentUser?.id && !isOwnProfile) {
+        const status = await isFollowingUser(currentUser.id, profileId)
+        setIsFollowing(status)
+      }
     } catch (error) {
       console.error('Profile loading error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleFollow = async () => {
+    if (!currentUser?.id) {
+      alert('Please login first')
+      return
+    }
+
+    if (isOwnProfile) return
+
+    try {
+      setFollowLoading(true)
+
+      const result = await toggleFollow(currentUser.id, profileId)
+
+      setIsFollowing(result.following)
+
+      setFollowers((prev) =>
+        result.following ? prev + 1 : Math.max(0, prev - 1)
+      )
+    } catch (error) {
+      console.error('Follow error:', error)
+      alert(error.message || 'Follow action failed')
+    } finally {
+      setFollowLoading(false)
     }
   }
 
@@ -125,16 +175,36 @@ export default function Profile() {
               </h1>
 
               <div className="flex gap-2 justify-center md:justify-start">
-                <button
-                  onClick={openEditModal}
-                  className="px-4 py-1 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Edit profile
-                </button>
+                {isOwnProfile ? (
+                  <>
+                    <button
+                      onClick={openEditModal}
+                      className="px-4 py-1 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Edit profile
+                    </button>
 
-                <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                  <Settings size={20} />
-                </button>
+                    <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                      <Settings size={20} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className={`px-5 py-1 font-semibold rounded-lg transition-colors disabled:opacity-60 ${
+                      isFollowing
+                        ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    {followLoading
+                      ? 'Loading...'
+                      : isFollowing
+                      ? 'Following'
+                      : 'Follow'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -145,12 +215,12 @@ export default function Profile() {
               </div>
 
               <div>
-                <span className="font-semibold">0</span>
+                <span className="font-semibold">{followers}</span>
                 <span className="text-gray-600 ml-1">followers</span>
               </div>
 
               <div>
-                <span className="font-semibold">0</span>
+                <span className="font-semibold">{following}</span>
                 <span className="text-gray-600 ml-1">following</span>
               </div>
             </div>
@@ -180,9 +250,11 @@ export default function Profile() {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Grid size={24} className="text-gray-400" />
             </div>
+
             <h3 className="text-lg font-semibold text-gray-600 mb-2">
               No posts yet
             </h3>
+
             <p className="text-gray-500">Share your first photo or video</p>
           </div>
         ) : (
@@ -253,6 +325,7 @@ export default function Profile() {
               <label className="block text-sm font-semibold mb-1">
                 Username
               </label>
+
               <input
                 value={editUsername}
                 onChange={(e) => setEditUsername(e.target.value)}
@@ -265,6 +338,7 @@ export default function Profile() {
               <label className="block text-sm font-semibold mb-1">
                 Bio
               </label>
+
               <textarea
                 value={editBio}
                 onChange={(e) => setEditBio(e.target.value)}
