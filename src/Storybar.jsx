@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { getStories, createStory } from "./api/storyApi";
@@ -7,6 +8,7 @@ import StoryViewer from "./StoryViewer";
 
 function Storybar() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fileInputRef = useRef(null);
 
@@ -131,6 +133,15 @@ function Storybar() {
     }
   };
 
+  const goToStoryProfile = (event, userId) => {
+     event.stopPropagation();
+
+       if (!userId) return;
+
+       setActiveUserStories(null);
+       navigate(`/profile/${userId}`);
+  };
+
   return (
     <>
       <div className="mb-5 w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
@@ -204,9 +215,13 @@ function Storybar() {
                   </div>
                 </div>
 
-                <p className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700">
-                  {group.username}
-                </p>
+                <button
+                 type="button"
+                 onClick={(event) => goToStoryProfile(event, group.userId)}
+                 className="mt-1 max-w-[74px] truncate text-xs font-medium text-slate-700 hover:underline"
+                >
+                {group.username}
+              </button>
               </div>
             );
           })}
