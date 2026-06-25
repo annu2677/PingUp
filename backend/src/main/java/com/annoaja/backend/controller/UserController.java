@@ -67,5 +67,10 @@ public class UserController {
         catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
+
+        @GetMapping
+        public ResponseEntity<?> getAllUsers() {
+            return ResponseEntity.ok(userService.getAllUsers());
+        }
     }
 }

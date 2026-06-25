@@ -37,13 +37,7 @@ public class FollowController {
     }
 
     @GetMapping("/status")
-    public Map<String, Boolean> isFollowing(
-            @RequestParam String followerId,
-            @RequestParam String followingId
-    ) {
-        return Map.of(
-                "following",
-                followService.isFollowing(followerId, followingId)
-        );
+    public Map<String, Boolean> isFollowing(@RequestParam String followerId, @RequestParam String followingId) {
+        return Map.of("following", followService.isFollowing(followerId, followingId));
     }
 }

@@ -6,6 +6,7 @@ import com.annoaja.backend.repository.UserRepository;
 import com.annoaja.backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class UserService {
@@ -69,5 +70,13 @@ public class UserService {
         savedUser.setPassword(null);
 
         return savedUser;
+    }
+
+    public List<User> getAllUsers() {
+        List<User> users = userRepository.findAll();
+
+        users.forEach(user -> user.setPassword(null));
+
+        return users;
     }
 }
