@@ -65,3 +65,15 @@ export const updateUserProfile = async (userId, profileData) => {
 
   return data
 }
+
+export const getAllUsers = async () => {
+  const response = await fetch(`${API_URL}/users`)
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to load users")
+  }
+
+  return data
+}

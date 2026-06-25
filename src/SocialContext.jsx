@@ -1,6 +1,7 @@
 import { getPosts, createPost as savePost } from './api/postApi.js'
 import { toggleLike, getLikeCount, isPostLikedByUser } from './api/likeApi.js'
 import { getCommentCount } from './api/commentApi.js'
+import { getAllUsers } from './api/userApi.js'
 import { useAuth } from './AuthContext'
 import { createContext, useState, useContext, useEffect, useCallback } from 'react'
 
@@ -13,6 +14,17 @@ export function SocialProvider({ children }) {
   const [notifications, _setNotifications] = useState([])
 
   const { user } = useAuth()
+  const loadUsers = useCallback(async () => {
+     try {
+           const data = await getAllUsers()
+           setUsers(Array.isArray(data) ? data : [])
+        } catch (error) {
+        console.error('Error loading users:', error)
+      }
+  }, [])
+  useEffect(() => {
+  loadUsers()
+  }, [loadUsers])
 
   const loadPosts = useCallback(async () => {
     console.log('LOAD POSTS CALLED')

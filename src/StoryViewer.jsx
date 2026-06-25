@@ -142,7 +142,7 @@ function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
 
   return (
     <div className="fixed inset-0 z-[99999] bg-black text-white">
-      <div className="absolute left-0 right-0 top-0 z-30 px-3 pt-4">
+      <div className="absolute left-0 right-0 top-0 z-50 px-3 pt-4">
         <div className="mb-4 flex gap-1">
           {stories.map((story, index) => (
             <div
@@ -231,12 +231,12 @@ function StoryViewer({ activeUserStories, onClose, onStoryDeleted }) {
 
       <button
         onClick={previousStory}
-        className="absolute left-0 top-0 h-full w-1/2"
+        className="absolute left-0 top-20 z-10 h-[calc(100%-5rem)] w-1/2"
       />
 
       <button
         onClick={nextStory}
-        className="absolute right-0 top-0 h-full w-1/2"
+        className="absolute right-0 top-20 z-10 h-[calc(100%-5rem)] w-1/2"
       />
     </div>
   );

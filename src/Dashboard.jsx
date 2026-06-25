@@ -1,19 +1,16 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  Plus,
-  Home,
-  Search,
-  Bell,
-  MessageCircle,
-  User,
-} from 'lucide-react'
+import { Plus,Home,Search,Bell,MessageCircle,User,LogOut,} from 'lucide-react'
 import { useAuth } from './AuthContext'
 import Sidebar from './Sidebar'
 import Feed from './Feed'
 import RightPanel from './RightPanel'
 import CreatePostModal from './CreatePostModal'
+import Explore from './Explore'
+import Messages from './Messages'
+import Notifications from './Notifications'
+import Profile from './Profile'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -25,31 +22,12 @@ export default function Dashboard() {
     location.pathname === '/' ? 'home' : location.pathname.split('/')[1]
 
   const mobileNavItems = [
-    { icon: <Home size={22} />, label: 'Home', path: '/', page: 'home' },
-    {
-      icon: <Search size={22} />,
-      label: 'Search',
-      path: '/explore',
-      page: 'explore',
-    },
-    {
-      icon: <Bell size={22} />,
-      label: 'Alerts',
-      path: '/notifications',
-      page: 'notifications',
-    },
-    {
-      icon: <MessageCircle size={22} />,
-      label: 'Chats',
-      path: '/messages',
-      page: 'messages',
-    },
-    {
-      icon: <User size={22} />,
-      label: 'Profile',
-      path: '/profile',
-      page: 'profile',
-    },
+    { icon: <Home size={21} />, label: 'Home', path: '/', page: 'home' },
+    { icon: <Search size={21} />, label: 'Search', path: '/explore', page: 'explore' },
+    { icon: <Bell size={21} />, label: 'Alerts', path: '/notifications', page: 'notifications' },
+    { icon: <MessageCircle size={21} />, label: 'Chats', path: '/messages', page: 'messages' },
+    { icon: <User size={21} />, label: 'Profile', path: '/profile', page: 'profile' },
+    { icon: <LogOut size={21} />, label: 'Logout', action: logout, page: 'logout' },
   ]
 
   const renderCurrentPage = () => {
@@ -67,7 +45,27 @@ export default function Dashboard() {
       )
     }
 
-    return null
+    if (location.pathname.startsWith('/explore')) {
+      return <Explore />
+    }
+
+    if (location.pathname.startsWith('/messages')) {
+      return <Messages />
+    }
+
+    if (location.pathname.startsWith('/notifications')) {
+      return <Notifications />
+    }
+
+    if (location.pathname.startsWith('/profile')) {
+      return <Profile />
+    }
+
+    return (
+      <main className="relative z-10 flex-1 px-3 py-4 pb-24 sm:px-5 lg:px-6">
+        <Feed />
+      </main>
+    )
   }
 
   return (
@@ -79,26 +77,35 @@ export default function Dashboard() {
     >
       <Sidebar user={user} onLogout={logout} currentPage={currentPage} />
 
-      <div className="min-w-0 flex-1 pb-20 md:pb-0">
+      <div className="min-w-0 flex-1 pb-24 md:pb-0">
         {renderCurrentPage()}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white px-2 py-2 shadow-lg md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-slate-200 bg-white px-1 py-2 shadow-lg md:hidden">
         {mobileNavItems.map((item) => {
           const active = currentPage === item.page
 
           return (
             <button
               key={item.page}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium transition ${
-                active
+              type="button"
+              onClick={() => {
+                if (item.action) {
+                  item.action()
+                } else {
+                  navigate(item.path)
+                }
+              }}
+              className={`flex flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium transition ${
+                item.page === 'logout'
+                  ? 'text-red-600'
+                  : active
                   ? 'text-blue-600'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {item.icon}
-              {item.label}
+              <span>{item.label}</span>
             </button>
           )
         })}
