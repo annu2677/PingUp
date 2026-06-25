@@ -1,17 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  Heart,
-  MessageCircle,
-  Send,
-  Bookmark,
-  MoreHorizontal,
-} from 'lucide-react'
+import {Heart,MessageCircle,Send,Bookmark,MoreHorizontal,} from 'lucide-react'
 import { useSocial } from './SocialContext'
 import CommentsModal from './CommentsModal'
 
 function PostCard({ post, index }) {
   const [showComments, setShowComments] = useState(false)
+
+  const navigate = useNavigate()
 
   const { likePost, currentUser } = useSocial()
 
@@ -22,6 +19,14 @@ function PostCard({ post, index }) {
     }
 
     await likePost(post.id)
+  }
+
+  const goToProfile = () => {
+    const userId = post.user?.id || post.userId
+
+    if (!userId) return
+
+    navigate(`/profile/${userId}`)
   }
 
   const username =
@@ -49,7 +54,11 @@ function PostCard({ post, index }) {
         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={goToProfile}
+            className="flex min-w-0 items-center gap-3 text-left"
+          >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-sm font-bold text-white">
               {profilePicture ? (
                 <img
@@ -63,7 +72,7 @@ function PostCard({ post, index }) {
             </div>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-950">
+              <p className="truncate text-sm font-semibold text-slate-950 hover:underline">
                 {username}
               </p>
 
@@ -73,7 +82,7 @@ function PostCard({ post, index }) {
                   : ''}
               </p>
             </div>
-          </div>
+          </button>
 
           <button className="rounded-full p-2 text-slate-600 transition hover:bg-slate-100">
             <MoreHorizontal size={20} />
@@ -130,9 +139,13 @@ function PostCard({ post, index }) {
 
           {post.caption && (
             <p className="mt-2 text-sm leading-relaxed text-slate-800">
-              <span className="font-semibold text-slate-950">
+              <button
+                type="button"
+                onClick={goToProfile}
+                className="font-semibold text-slate-950 hover:underline"
+              >
                 {username}
-              </span>{' '}
+              </button>{' '}
               {post.caption}
             </p>
           )}

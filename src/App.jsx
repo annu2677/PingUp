@@ -10,12 +10,11 @@ import Notifications from './Notifications'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
-  console.log('ProtectedRoute: user is', user)
+
   if (!user) {
-    console.log('ProtectedRoute: redirecting to login')
     return <Navigate to="/login" replace />
   }
-  console.log('ProtectedRoute: rendering protected content')
+
   return children
 }
 
@@ -26,6 +25,7 @@ function App() {
         <SocialProvider>
           <Routes>
             <Route path="/login" element={<AuthPage />} />
+
             <Route
               path="/"
               element={
@@ -34,6 +34,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/messages"
               element={
@@ -42,6 +43,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/explore"
               element={
@@ -50,6 +52,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/notifications"
               element={
@@ -58,6 +61,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/profile"
               element={
@@ -66,6 +70,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/profile/:userId"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </SocialProvider>
