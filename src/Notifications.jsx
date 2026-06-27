@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, Heart, MessageCircle, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import {
   getNotifications,
@@ -8,6 +9,8 @@ import {
 
 function Notifications() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,19 +31,25 @@ function Notifications() {
     loadNotifications();
   }, [user?.id]);
 
-  const handleRead = async (notificationId) => {
+  const handleNotificationClick = async (notification) => {
     try {
-      await markNotificationAsRead(notificationId);
+      if (!notification.read) {
+        await markNotificationAsRead(notification.id);
+      }
 
       setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, read: true }
-            : notification
+        prev.map((item) =>
+          item.id === notification.id ? { ...item, read: true } : item
         )
       );
+
+      if (notification.type === "LIKE" || notification.type === "COMMENT") {
+        navigate(`/post/${notification.postId}`);
+      } else if (notification.type === "FOLLOW") {
+        navigate(`/profile/${notification.senderUserId}`);
+      }
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error("Error opening notification:", error);
     }
   };
 
@@ -52,50 +61,51 @@ function Notifications() {
   };
 
   if (loading) {
-    return <div className="p-6 text-white">Loading notifications...</div>;
+    return <div className="p-6 text-slate-700">Loading notifications...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-2xl font-bold mb-6">Notifications</h1>
+    <div className="min-h-screen bg-slate-100 p-6 text-slate-900">
+      <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
 
       {notifications.length === 0 ? (
-        <p className="text-gray-400">No notifications yet.</p>
+        <p className="text-slate-500">No notifications yet.</p>
       ) : (
         <div className="space-y-4">
           {notifications.map((notification) => (
-            <div
+            <button
               key={notification.id}
-              onClick={() => handleRead(notification.id)}
-              className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer ${
-                notification.read ? "bg-zinc-900" : "bg-zinc-800"
+              type="button"
+              onClick={() => handleNotificationClick(notification)}
+              className={`flex w-full items-center gap-4 rounded-2xl p-4 text-left shadow-sm transition hover:bg-white ${
+                notification.read ? "bg-white" : "bg-blue-50"
               }`}
             >
               {notification.senderProfilePicture ? (
                 <img
                   src={notification.senderProfilePicture}
                   alt={notification.senderUsername}
-                  className="w-11 h-11 rounded-full object-cover"
+                  className="h-11 w-11 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-11 h-11 rounded-full bg-purple-600 flex items-center justify-center font-bold">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-purple-600 font-bold text-white">
                   {notification.senderUsername?.charAt(0)?.toUpperCase() || "U"}
                 </div>
               )}
 
               <div className="flex-1">
-                <p>{notification.message}</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm font-medium">{notification.message}</p>
+                <p className="text-xs text-slate-500">
                   {new Date(notification.createdAt).toLocaleString()}
                 </p>
               </div>
 
-              <div className="text-gray-300">{getIcon(notification.type)}</div>
+              <div className="text-slate-500">{getIcon(notification.type)}</div>
 
               {!notification.read && (
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-600"></span>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}

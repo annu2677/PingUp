@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus,Home,Search,Bell,MessageCircle,User,LogOut,} from 'lucide-react'
+import {Plus,Home,Search,Bell,MessageCircle,User,LogOut,} from 'lucide-react'
+
 import { useAuth } from './AuthContext'
 import Sidebar from './Sidebar'
 import Feed from './Feed'
@@ -11,20 +12,57 @@ import Explore from './Explore'
 import Messages from './Messages'
 import Notifications from './Notifications'
 import Profile from './Profile'
+import SinglePost from './SinglePost'
+import { getUnreadNotificationCount } from './api/notificationApi'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const currentPage =
     location.pathname === '/' ? 'home' : location.pathname.split('/')[1]
 
+  const loadUnreadCount = async () => {
+    if (!user?.id) return
+
+    try {
+      const count = await getUnreadNotificationCount(user.id)
+      setUnreadCount(Number(count) || 0)
+    } catch (error) {
+      console.error('Error loading notification count:', error)
+    }
+  }
+
+  useEffect(() => {
+    loadUnreadCount()
+
+    const interval = setInterval(loadUnreadCount, 10000)
+
+    return () => clearInterval(interval)
+  }, [user?.id, location.pathname])
+
   const mobileNavItems = [
     { icon: <Home size={21} />, label: 'Home', path: '/', page: 'home' },
     { icon: <Search size={21} />, label: 'Search', path: '/explore', page: 'explore' },
-    { icon: <Bell size={21} />, label: 'Alerts', path: '/notifications', page: 'notifications' },
+    {
+      icon: (
+        <div className="relative">
+          <Bell size={21} />
+          {unreadCount > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </div>
+      ),
+      label: 'Alerts',
+      path: '/notifications',
+      page: 'notifications',
+    },
     { icon: <MessageCircle size={21} />, label: 'Chats', path: '/messages', page: 'messages' },
     { icon: <User size={21} />, label: 'Profile', path: '/profile', page: 'profile' },
     { icon: <LogOut size={21} />, label: 'Logout', action: logout, page: 'logout' },
@@ -57,6 +95,10 @@ export default function Dashboard() {
       return <Notifications />
     }
 
+    if (location.pathname.startsWith('/post/')) {
+      return <SinglePost />
+    }
+
     if (location.pathname.startsWith('/profile')) {
       return <Profile />
     }
@@ -75,7 +117,12 @@ export default function Dashboard() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen bg-slate-100 flex"
     >
-      <Sidebar user={user} onLogout={logout} currentPage={currentPage} />
+      <Sidebar
+        user={user}
+        onLogout={logout}
+        currentPage={currentPage}
+        unreadCount={unreadCount}
+      />
 
       <div className="min-w-0 flex-1 pb-24 md:pb-0">
         {renderCurrentPage()}
