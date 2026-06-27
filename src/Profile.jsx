@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Grid, X } from 'lucide-react'
-import { useParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useSocial } from './SocialContext'
 import { useAuth } from './AuthContext'
 import { getUserById, updateUserProfile } from './api/userApi'
@@ -10,9 +10,12 @@ import {toggleFollow,getFollowersCount,getFollowingCount,isFollowingUser,} from 
 export default function Profile() {
   const { posts } = useSocial()
   const { user: currentUser } = useAuth()
-  const { userId } = useParams()
+  const location = useLocation()
 
-  const profileId = userId || currentUser?.id
+  const pathParts = location.pathname.split('/')
+  const userIdFromUrl = pathParts[2]
+
+  const profileId = userIdFromUrl || currentUser?.id
   const isOwnProfile = String(profileId) === String(currentUser?.id)
 
   const [profileUser, setProfileUser] = useState(null)
