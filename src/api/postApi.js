@@ -31,3 +31,13 @@ export const createPost = async (postData) => {
 };
 
 export const createPostAPI = createPost;
+
+export const getPostById = async (postId) => {
+  const response = await fetch(`${API_URL}/posts/${postId}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch post");
+  }
+
+  return response.json();
+};
