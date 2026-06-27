@@ -13,20 +13,28 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
 
-    public CommentService(
-            CommentRepository commentRepository,
-            NotificationService notificationService
-    ) {
+    public CommentService(CommentRepository commentRepository, NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.notificationService = notificationService;
     }
 
     public Comment addComment(Comment comment) {
+        System.out.println("COMMENT USER ID = " + comment.getUserId());
+        System.out.println("COMMENT POST ID = " + comment.getPostId());
+
+        if (comment.getPostId() == null || comment.getPostId().isBlank()) {
+            throw new RuntimeException("Post id is required for comment");
+        }
+
+        if (comment.getUserId() == null || comment.getUserId().isBlank()) {
+            throw new RuntimeException("User id is required for comment");
+        }
+
         comment.setCreatedAt(LocalDateTime.now());
 
         Comment savedComment = commentRepository.save(comment);
 
-        notificationService.createCommentNotification(comment.getUserId(), comment.getPostId());
+        notificationService.createCommentNotification(savedComment.getUserId(), savedComment.getPostId());
 
         return savedComment;
     }
