@@ -30,12 +30,12 @@ function RightPanel({ user }) {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.1 }}
-        whileHover={{ x: 6, scale: 1.02 }}
-        className="flex items-center justify-between gap-4 rounded-2xl bg-white/90 p-4 shadow-sm border border-white/50 hover:shadow-md transition-all cursor-pointer group"
+        whileHover={{ x: 3, scale: 1.01 }}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/50 bg-white/90 p-4 shadow-sm transition-all hover:shadow-md"
       >
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="relative shrink-0">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 font-semibold text-white">
               {profilePicture ? (
                 <img
                   src={profilePicture}
@@ -55,7 +55,7 @@ function RightPanel({ user }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
+            <p className="truncate font-semibold text-slate-900">
               {username.replace('_', ' ')}
             </p>
 
@@ -66,9 +66,9 @@ function RightPanel({ user }) {
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:shadow-lg"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          className="shrink-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:shadow-lg"
         >
           Follow
         </motion.button>
@@ -85,15 +85,15 @@ function RightPanel({ user }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1 }}
         whileHover={{ scale: 1.02 }}
-        className="flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors hover:bg-white/50 group"
+        className="group flex cursor-pointer items-center justify-between rounded-xl p-3 transition-colors hover:bg-white/50"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-orange-400 to-pink-400">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-orange-400 to-pink-400">
             <Hash size={14} className="text-white" />
           </div>
 
-          <div>
-            <p className="font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-slate-900 transition-colors group-hover:text-blue-600">
               #{topic.tag}
             </p>
 
@@ -107,6 +107,7 @@ function RightPanel({ user }) {
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
+            className="shrink-0"
           >
             <Flame size={16} className="text-orange-500" />
           </motion.div>
@@ -116,16 +117,16 @@ function RightPanel({ user }) {
   }
 
   return (
-    <aside className="w-80 p-6 hidden lg:block space-y-6">
+    <aside className="hidden w-80 space-y-6 p-6 lg:block">
       <motion.div
         initial={{ opacity: 0, x: 24 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="glass-card rounded-3xl p-6 border border-white/70 shadow-xl"
+        className="glass-card rounded-3xl border border-white/70 p-6 shadow-xl"
       >
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xl font-bold">
+        <div className="mb-4 flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xl font-bold text-white">
               {user?.profilePicture ? (
                 <img
                   src={user.profilePicture}
@@ -143,7 +144,7 @@ function RightPanel({ user }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-sm uppercase tracking-wider text-slate-500 font-medium">
+            <p className="text-sm font-medium uppercase tracking-wider text-slate-500">
               Welcome back
             </p>
 
@@ -157,7 +158,7 @@ function RightPanel({ user }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="mt-4 grid grid-cols-3 gap-4">
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-600">24</p>
             <p className="text-xs text-slate-500">Posts</p>
@@ -179,15 +180,17 @@ function RightPanel({ user }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="glass-card rounded-3xl p-6 border border-white/70 shadow-xl"
+        className="glass-card rounded-3xl border border-white/70 p-6 shadow-xl"
       >
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users size={20} className="text-blue-500" />
-            <h2 className="font-bold text-slate-900">Suggested for you</h2>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Users size={20} className="shrink-0 text-blue-500" />
+            <h2 className="font-bold text-slate-900">
+              Suggested for you
+            </h2>
           </div>
 
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
             Updated
           </span>
         </div>
@@ -211,11 +214,13 @@ function RightPanel({ user }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="glass-card rounded-3xl p-6 border border-white/70 shadow-xl"
+        className="glass-card rounded-3xl border border-white/70 p-6 shadow-xl"
       >
         <div className="mb-5 flex items-center gap-2">
           <TrendingUp size={20} className="text-orange-500" />
-          <h2 className="font-bold text-slate-900">Trending Topics</h2>
+          <h2 className="font-bold text-slate-900">
+            Trending Topics
+          </h2>
         </div>
 
         <div className="space-y-2">
@@ -237,9 +242,11 @@ function RightPanel({ user }) {
           <span className="cursor-pointer transition-colors hover:text-slate-700">
             Privacy
           </span>
+
           <span className="cursor-pointer transition-colors hover:text-slate-700">
             Terms
           </span>
+
           <span className="cursor-pointer transition-colors hover:text-slate-700">
             Help
           </span>
