@@ -8,49 +8,38 @@ import org.springframework.stereotype.Service;
 public class LikeService {
 
     private final LikeRepository likeRepository;
+    private final NotificationService notificationService;
 
-    public LikeService(LikeRepository likeRepository){
+    public LikeService(LikeRepository likeRepository, NotificationService notificationService) {
         this.likeRepository = likeRepository;
+        this.notificationService = notificationService;
     }
 
     public long toggleLike(String postId, String userId) {
 
-        System.out.println("POST ID = " + postId);
-        System.out.println("USER ID = " + userId);
+        boolean alreadyLiked = likeRepository.existsByPostIdAndUserId(postId, userId);
 
-        boolean alreadyLiked =
-                likeRepository.existsByPostIdAndUserId(postId, userId);
-
-        System.out.println("ALREADY LIKED = " + alreadyLiked);
-
-        if(!alreadyLiked){
+        if (!alreadyLiked) {
 
             Like like = new Like();
-
             like.setPostId(postId);
             like.setUserId(userId);
 
-            Like saved = likeRepository.save(like);
+            likeRepository.save(like);
 
-            System.out.println("SAVED LIKE = " + saved);
+            notificationService.createLikeNotification(userId, postId);
 
-        } else {
+        }
+        else {
 
-            System.out.println("REMOVING LIKE");
+            Like existingLike = likeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
 
-            Like existingLike =
-                    likeRepository.findByPostIdAndUserId(postId,userId).orElse(null);
-
-            if(existingLike != null){
+            if (existingLike != null) {
                 likeRepository.delete(existingLike);
             }
         }
 
-        long count = likeRepository.countByPostId(postId);
-
-        System.out.println("TOTAL LIKES = " + count);
-
-        return count;
+        return likeRepository.countByPostId(postId);
     }
 
     public long getLikeCount(String postId) {
@@ -60,4 +49,4 @@ public class LikeService {
     public boolean isPostLikedByUser(String postId, String userId) {
         return likeRepository.existsByPostIdAndUserId(postId, userId);
     }
- }
+}

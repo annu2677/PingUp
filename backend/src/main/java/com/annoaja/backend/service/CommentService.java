@@ -11,14 +11,24 @@ import java.util.List;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
-    public CommentService(CommentRepository commentRepository) {
+    public CommentService(
+            CommentRepository commentRepository,
+            NotificationService notificationService
+    ) {
         this.commentRepository = commentRepository;
+        this.notificationService = notificationService;
     }
 
     public Comment addComment(Comment comment) {
         comment.setCreatedAt(LocalDateTime.now());
-        return commentRepository.save(comment);
+
+        Comment savedComment = commentRepository.save(comment);
+
+        notificationService.createCommentNotification(comment.getUserId(), comment.getPostId());
+
+        return savedComment;
     }
 
     public List<Comment> getCommentsByPostId(String postId) {
