@@ -25,5 +25,9 @@ public class PostService {
     public List<Post> getAllPosts(){
         return repo.findAll();
     }
+
+    public Post getPostById(String postId) {
+        return postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+    }
 }
 
