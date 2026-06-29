@@ -28,10 +28,15 @@ export default function Messages() {
   const loadUsers = async () => {
     try {
       const data = await getAllUsers();
-      const usersArray = Array.isArray(data) ? data : data.data || [];
+      console.log("USERS FROM BACKEND:", data);
 
-      setAllUsers(usersArray.filter((item) => item.id !== currentUserId));
-    } catch (error) {
+      const usersArray = Array.isArray(data)? data: data.users || data.data || data.content || [];
+
+      setAllUsers(
+          usersArray.filter((item) => (item.id || item._id) !== currentUserId)
+      );
+    } 
+    catch (error) {
       console.error("Error loading users:", error);
     }
   };
@@ -70,8 +75,7 @@ export default function Messages() {
     return allUsers.find((item) => item.id === userId);
   };
 
-  const conversationUsers = conversations
-    .map((conversation) => {
+  const conversationUsers = conversations.map((conversation) => {
       const otherUserId = getOtherUserId(conversation);
       const otherUser = findUserById(otherUserId);
 
@@ -84,13 +88,14 @@ export default function Messages() {
     .filter((item) => item.otherUser);
 
   const openChat = async (otherUser) => {
-    if (!currentUserId || !otherUser?.id) return;
+    const otherUserId = otherUser.id || otherUser._id;
+    if (!currentUserId || !otherUserId) return;
 
     try {
       setSelectedUser(otherUser);
       setLoadingMessages(true);
 
-      const conversation = await getOrCreateConversation(currentUserId, otherUser.id);
+      const conversation = await getOrCreateConversation(currentUserId, otherUserId);
       setSelectedConversation(conversation);
 
       const messages = await getMessages(conversation.id);
@@ -110,7 +115,7 @@ export default function Messages() {
     try {
       const savedMessage = await sendMessage({
         senderId: currentUserId,
-        receiverId: selectedUser.id,
+        receiverId: selectedUser.id || selectedUser._id,
         text: newMessage.trim(),
       });
 
@@ -173,7 +178,7 @@ export default function Messages() {
             ) : (
               filteredUsers.map((chatUser) => (
                 <button
-                  key={chatUser.id}
+                  key={chatUser.id || chatUser._id}
                   onClick={() => openChat(chatUser)}
                   className="flex w-full items-center gap-3 border-b border-slate-100 p-4 text-left hover:bg-slate-50"
                 >
