@@ -1,12 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {Heart,MessageCircle,Send,Bookmark,MoreHorizontal,} from 'lucide-react'
 import { useSocial } from './SocialContext'
 import CommentsModal from './CommentsModal'
 
-function PostCard({ post, index }) {
+function PostCard({ post, index, autoOpenComments = false }) {
   const [showComments, setShowComments] = useState(false)
+
+  useEffect(() => {
+     if (autoOpenComments) {
+       setShowComments(true)
+     }
+  }, [autoOpenComments])
 
   const navigate = useNavigate()
 
@@ -29,17 +35,9 @@ function PostCard({ post, index }) {
     navigate(`/profile/${userId}`)
   }
 
-  const username =
-    post.user?.username ||
-    post.user?.name ||
-    post.username ||
-    'unknown'
+  const username =post.user?.username ||post.user?.name ||post.username ||'unknown'
 
-  const profilePicture =
-    post.user?.profilePicture ||
-    post.userProfilePicture ||
-    post.profilePicture ||
-    ''
+  const profilePicture =post.user?.profilePicture ||post.userProfilePicture ||post.profilePicture ||''
 
   return (
     <>

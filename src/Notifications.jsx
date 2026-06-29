@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { Bell, Heart, MessageCircle, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
-import {
-  getNotifications,
-  markNotificationAsRead,
-} from "./api/notificationApi";
+import {getNotifications,markNotificationAsRead,} from "./api/notificationApi";
 
 function Notifications() {
   const { user } = useAuth();
@@ -43,10 +40,14 @@ function Notifications() {
         )
       );
 
-      if (notification.type === "LIKE" || notification.type === "COMMENT") {
-        navigate(`/post/${notification.postId}`);
-      } else if (notification.type === "FOLLOW") {
-        navigate(`/profile/${notification.senderUserId}`);
+      if (notification.type === "LIKE") {
+         navigate(`/post/${notification.postId}`);
+      } 
+      else if (notification.type === "COMMENT") {
+         navigate(`/post/${notification.postId}?openComments=true`);
+      } 
+      else if (notification.type === "FOLLOW") {
+         navigate(`/profile/${notification.senderUserId}`);
       }
     } catch (error) {
       console.error("Error opening notification:", error);

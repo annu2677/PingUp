@@ -14,6 +14,8 @@ function SinglePost() {
 
   const postId = location.pathname.split("/post/")[1];
 
+  const autoOpenComments = location.search.includes("openComments=true");
+
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +96,7 @@ function SinglePost() {
             <p className="font-semibold text-red-600">Post not found</p>
           </div>
         ) : (
-          <PostCard post={post} index={0} />
+          <PostCard post={post} index={0} autoOpenComments={autoOpenComments} />
         )}
       </section>
     </main>
