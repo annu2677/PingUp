@@ -3,10 +3,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import PostCard from "./PostCard";
 import { getPostById } from "./api/postApi";
+import { getLikeCount, isPostLikedByUser } from "./api/likeApi";
+import { getCommentCount } from "./api/commentApi";
+import { useSocial } from "./SocialContext";
 
 function SinglePost() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentUser } = useSocial();
 
   const postId = location.pathname.split("/post/")[1];
 
@@ -20,6 +24,12 @@ function SinglePost() {
 
         const data = await getPostById(postId);
 
+        const [likeCount, commentCount, likedByUser] = await Promise.all([
+          getLikeCount(postId),
+          getCommentCount(postId),
+          currentUser?.id ? isPostLikedByUser(postId, currentUser.id) : false,
+        ]);
+
         setPost({
           id: data.id,
           userId: data.userId,
@@ -28,9 +38,9 @@ function SinglePost() {
           caption: data.content,
           image: data.imageUrl,
           timestamp: data.createdAt,
-          likes: 0,
-          comments: 0,
-          liked: false,
+          likes: Number(likeCount) || 0,
+          comments: Number(commentCount) || 0,
+          liked: Boolean(likedByUser),
         });
       } catch (error) {
         console.error("Error loading single post:", error);
@@ -41,7 +51,7 @@ function SinglePost() {
     };
 
     loadPost();
-  }, [postId]);
+  }, [postId, currentUser?.id]);
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5">
