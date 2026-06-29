@@ -8,31 +8,27 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
-@CrossOrigin(origins="*")
-
+@CrossOrigin(origins = "*")
 public class PostController {
 
     private final PostService service;
 
-    public PostController(PostService service){
-        this.service=service;
+    public PostController(PostService service) {
+        this.service = service;
     }
 
     @PostMapping
-    public Post createPost(@RequestBody Post post){
+    public Post createPost(@RequestBody Post post) {
         return service.createPost(post);
     }
 
     @GetMapping
-    public List<Post> getPosts(){
+    public List<Post> getPosts() {
         return service.getAllPosts();
     }
 
     @GetMapping("/{postId}")
     public Post getPostById(@PathVariable String postId) {
-        return postService.getPostById(postId);
+        return service.getPostById(postId);
     }
 }
-
-
-
