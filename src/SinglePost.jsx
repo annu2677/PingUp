@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import PostCard from "./PostCard";
 import { getPostById } from "./api/postApi";
 
 function SinglePost() {
-  const { postId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const postId = location.pathname.split("/post/")[1];
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,6 +16,8 @@ function SinglePost() {
   useEffect(() => {
     const loadPost = async () => {
       try {
+        if (!postId) return;
+
         const data = await getPostById(postId);
 
         setPost({
@@ -50,20 +54,18 @@ function SinglePost() {
           Back
         </button>
 
-        {loading && (
+        {loading ? (
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
             <p className="font-semibold text-slate-800">Loading post...</p>
           </div>
-        )}
-
-        {!loading && !post && (
+        ) : !post ? (
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
             <p className="font-semibold text-red-600">Post not found</p>
             <p className="mt-2 text-xs text-slate-500">Post ID: {postId}</p>
           </div>
+        ) : (
+          <PostCard post={post} index={0} />
         )}
-
-        {!loading && post && <PostCard post={post} index={0} />}
       </section>
     </main>
   );
