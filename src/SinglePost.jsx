@@ -17,6 +17,23 @@ function SinglePost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const extractCount = (data) => {
+    if (typeof data === "number") return data;
+    if (typeof data === "string") return Number(data) || 0;
+    if (typeof data === "object" && data !== null) {
+      return Number(data.count || data.likes || data.comments || data.data || 0);
+    }
+    return 0;
+  };
+
+  const extractLiked = (data) => {
+    if (typeof data === "boolean") return data;
+    if (typeof data === "object" && data !== null) {
+      return Boolean(data.liked || data.isLiked || data.data);
+    }
+    return false;
+  };
+
   useEffect(() => {
     const loadPost = async () => {
       try {
@@ -24,23 +41,27 @@ function SinglePost() {
 
         const data = await getPostById(postId);
 
-        const [likeCount, commentCount, likedByUser] = await Promise.all([
+        const [likeData, commentData, likedData] = await Promise.all([
           getLikeCount(postId),
           getCommentCount(postId),
           currentUser?.id ? isPostLikedByUser(postId, currentUser.id) : false,
         ]);
 
+        console.log("LIKE DATA:", likeData);
+        console.log("COMMENT DATA:", commentData);
+        console.log("LIKED DATA:", likedData);
+
         setPost({
-          id: data.id,
+          id: data.id || data._id,
           userId: data.userId,
           username: data.username,
           profilePicture: data.profilePicture,
           caption: data.content,
           image: data.imageUrl,
           timestamp: data.createdAt,
-          likes: Number(likeCount) || 0,
-          comments: Number(commentCount) || 0,
-          liked: Boolean(likedByUser),
+          likes: extractCount(likeData),
+          comments: extractCount(commentData),
+          liked: extractLiked(likedData),
         });
       } catch (error) {
         console.error("Error loading single post:", error);
@@ -71,7 +92,6 @@ function SinglePost() {
         ) : !post ? (
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
             <p className="font-semibold text-red-600">Post not found</p>
-            <p className="mt-2 text-xs text-slate-500">Post ID: {postId}</p>
           </div>
         ) : (
           <PostCard post={post} index={0} />
