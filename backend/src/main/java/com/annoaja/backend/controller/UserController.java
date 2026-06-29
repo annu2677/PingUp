@@ -39,15 +39,11 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
         try {
-            AuthResponse response = userService.loginUser(
-                    user.getEmail(),
-                    user.getPassword()
-            );
+            AuthResponse response = userService.loginUser(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", e.getMessage()));
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));
         }
     }
 
