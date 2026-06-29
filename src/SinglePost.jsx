@@ -10,10 +10,15 @@ function SinglePost() {
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorText, setErrorText] = useState("");
 
   const loadPost = async () => {
     try {
+      console.log("OPENING POST ID FROM URL:", postId);
+
       const data = await getPostById(postId);
+
+      console.log("POST DATA FROM BACKEND:", data);
 
       const formattedPost = {
         id: data.id || data._id,
@@ -31,13 +36,16 @@ function SinglePost() {
       setPost(formattedPost);
     } catch (error) {
       console.error("Error loading single post:", error);
+      setErrorText(error.message || "Failed to load post");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPost();
+    if (postId) {
+      loadPost();
+    }
   }, [postId]);
 
   return (
@@ -57,7 +65,9 @@ function SinglePost() {
           </div>
         ) : !post ? (
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-            <p className="font-semibold text-slate-800">Post not found</p>
+            <p className="font-semibold text-red-600">Post not found</p>
+            <p className="mt-2 text-xs text-slate-500">Post ID: {postId}</p>
+            <p className="mt-1 text-xs text-slate-500">{errorText}</p>
           </div>
         ) : (
           <PostCard post={post} index={0} />
