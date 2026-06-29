@@ -25,6 +25,8 @@ public class Notification {
     private String type; // FOLLOW, LIKE, COMMENT
 
     private String postId;
+    private String commentId;
+
     private String message;
 
     private boolean read;

@@ -65,7 +65,7 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public void createCommentNotification(String senderUserId, String postId) {
+    public void createCommentNotification(String senderUserId, String postId, String commentId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
 
         String recipientUserId = post.getUserId();
@@ -81,6 +81,7 @@ public class NotificationService {
         notification.setSenderProfilePicture(sender.getProfilePicture());
         notification.setType("COMMENT");
         notification.setPostId(postId);
+        notification.setCommentId(commentId);
         notification.setMessage(sender.getUsername() + " commented on your post");
         notification.setRead(false);
         notification.setCreatedAt(LocalDateTime.now());
