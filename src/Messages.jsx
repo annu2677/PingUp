@@ -2,13 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import {
-  getAllUsers,
-  getConversations,
-  getOrCreateConversation,
-  getMessages,
-  sendMessage,
-} from "./api/messageApi.js";
+import {getAllUsers, getConversations, getOrCreateConversation, getMessages, sendMessage,} from "./api/messageApi.js";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -27,19 +21,13 @@ export default function Messages() {
   const currentUserId = user?.id;
 
   const formatTime = (date) => {
-    if (!date) return "";
+  if (!date) return "";
 
-    const d = new Date(date);
-    const now = new Date();
-    const diff = (now - d) / 1000;
-
-    if (diff < 60) return "now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-    if (diff < 172800) return "Yesterday";
-
-    return d.toLocaleDateString();
-  };
+  return new Date(date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
   const loadUsers = async () => {
     try {
