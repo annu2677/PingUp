@@ -41,6 +41,8 @@ export const getMessages = async (conversationId) => {
 };
 
 export const sendMessage = async ({ senderId, receiverId, text }) => {
+  console.log("SENDING MESSAGE:", { senderId, receiverId, text });
+
   const response = await fetch(`${API_URL}/messages`, {
     method: "POST",
     headers: {
@@ -49,9 +51,14 @@ export const sendMessage = async ({ senderId, receiverId, text }) => {
     body: JSON.stringify({ senderId, receiverId, text }),
   });
 
+  const responseText = await response.text();
+
+  console.log("MESSAGE RESPONSE STATUS:", response.status);
+  console.log("MESSAGE RESPONSE TEXT:", responseText);
+
   if (!response.ok) {
-    throw new Error("Failed to send message");
+    throw new Error(responseText || "Failed to send message");
   }
 
-  return response.json();
+  return responseText ? JSON.parse(responseText) : null;
 };
