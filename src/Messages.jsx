@@ -2,13 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import {
-  getAllUsers,
-  getConversations,
-  getOrCreateConversation,
-  getMessages,
-  sendMessage,
-} from "./api/messageApi";
+import {getAllUsers,getConversations,getOrCreateConversation,getMessages,sendMessage,} from "./api/messageApi.js";
 
 export default function Messages() {
   const navigate = useNavigate();
