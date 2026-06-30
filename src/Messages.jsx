@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import {getAllUsers,getConversations,getOrCreateConversation,getMessages,sendMessage,} from "./api/messageApi.js";
+import {
+  getAllUsers,
+  getConversations,
+  getOrCreateConversation,
+  getMessages,
+  sendMessage,
+} from "./api/messageApi.js";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -17,20 +23,36 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  const messagesEndRef = useRef(null);
   const currentUserId = user?.id;
+
+  const formatTime = (date) => {
+    if (!date) return "";
+
+    const d = new Date(date);
+    const now = new Date();
+    const diff = (now - d) / 1000;
+
+    if (diff < 60) return "now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    if (diff < 172800) return "Yesterday";
+
+    return d.toLocaleDateString();
+  };
 
   const loadUsers = async () => {
     try {
       const data = await getAllUsers();
-      console.log("USERS FROM BACKEND:", data);
 
-      const usersArray = Array.isArray(data)? data: data.users || data.data || data.content || [];
+      const usersArray = Array.isArray(data)
+        ? data
+        : data.users || data.data || data.content || [];
 
       setAllUsers(
-          usersArray.filter((item) => (item.id || item._id) !== currentUserId)
+        usersArray.filter((item) => (item.id || item._id) !== currentUserId)
       );
-    } 
-    catch (error) {
+    } catch (error) {
       console.error("Error loading users:", error);
     }
   };
@@ -51,6 +73,10 @@ export default function Messages() {
     loadConversations();
   }, [currentUserId]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
@@ -66,7 +92,7 @@ export default function Messages() {
   };
 
   const findUserById = (userId) => {
-    return allUsers.find((item) => item.id === userId);
+    return allUsers.find((item) => (item.id || item._id) === userId);
   };
 
   const conversationUsers = conversations.map((conversation) => {
@@ -89,7 +115,11 @@ export default function Messages() {
       setSelectedUser(otherUser);
       setLoadingMessages(true);
 
-      const conversation = await getOrCreateConversation(currentUserId, otherUserId);
+      const conversation = await getOrCreateConversation(
+        currentUserId,
+        otherUserId
+      );
+
       setSelectedConversation(conversation);
 
       const messages = await getMessages(conversation.id);
@@ -145,6 +175,7 @@ export default function Messages() {
             >
               <ArrowLeft size={20} />
             </button>
+
             <h1 className="text-xl font-bold text-slate-950">Messages</h1>
           </div>
 
@@ -153,6 +184,7 @@ export default function Messages() {
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <input
               type="text"
               placeholder="Search users"
@@ -199,7 +231,9 @@ export default function Messages() {
                 key={conversation.id}
                 onClick={() => openChat(otherUser)}
                 className={`flex w-full items-center gap-3 border-b border-slate-100 p-4 text-left hover:bg-slate-50 ${
-                  selectedConversation?.id === conversation.id ? "bg-blue-50" : ""
+                  selectedConversation?.id === conversation.id
+                    ? "bg-blue-50"
+                    : ""
                 }`}
               >
                 <Avatar user={otherUser} />
@@ -209,10 +243,9 @@ export default function Messages() {
                     <p className="truncate text-sm font-semibold text-slate-950">
                       {otherUser.username || otherUser.name || "User"}
                     </p>
+
                     <p className="shrink-0 text-[11px] text-slate-400">
-                      {conversation.lastMessageAt
-                        ? new Date(conversation.lastMessageAt).toLocaleDateString()
-                        : ""}
+                      {formatTime(conversation.lastMessageAt)}
                     </p>
                   </div>
 
@@ -227,9 +260,7 @@ export default function Messages() {
       </div>
 
       <div
-        className={`flex flex-1 flex-col ${
-          selectedUser ? "flex" : "hidden md:flex"
-        }`}
+        className={`flex flex-1 flex-col ${selectedUser ? "flex" : "hidden md:flex"}`}
       >
         {selectedUser ? (
           <>
@@ -259,42 +290,52 @@ export default function Messages() {
                   Loading messages...
                 </p>
               ) : chatMessages.length === 0 ? (
-                <p className="text-center text-sm text-slate-500">
-                  Say hi to start the conversation.
-                </p>
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
+                      👋
+                    </div>
+                    <p className="font-semibold text-slate-800">
+                      No messages yet
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Send the first message and start your conversation.
+                    </p>
+                  </div>
+                </div>
               ) : (
-                chatMessages.map((message) => {
-                  const mine = message.senderId === currentUserId;
+                <>
+                  {chatMessages.map((message) => {
+                    const mine = message.senderId === currentUserId;
 
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                    >
+                    return (
                       <div
-                        className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                          mine
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-slate-800 shadow-sm"
-                        }`}
+                        key={message.id}
+                        className={`flex ${mine ? "justify-end" : "justify-start"}`}
                       >
-                        <p className="text-sm">{message.text}</p>
-                        <p
-                          className={`mt-1 text-[10px] ${
-                            mine ? "text-blue-100" : "text-slate-400"
+                        <div
+                          className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                            mine
+                              ? "bg-gradient-to-r from-violet-500 to-blue-500 text-white"
+                              : "bg-white text-slate-800 shadow-sm"
                           }`}
                         >
-                          {message.createdAt
-                            ? new Date(message.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : ""}
-                        </p>
+                          <p className="text-sm">{message.text}</p>
+
+                          <p
+                            className={`mt-1 text-[10px] ${
+                              mine ? "text-blue-100" : "text-slate-400"
+                            }`}
+                          >
+                            {formatTime(message.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+
+                  <div ref={messagesEndRef} />
+                </>
               )}
             </div>
 
@@ -312,7 +353,7 @@ export default function Messages() {
                 <button
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
-                  className="rounded-full bg-blue-600 p-3 text-white disabled:bg-slate-300"
+                  className="rounded-full bg-blue-600 p-3 text-white transition hover:bg-blue-700 active:scale-95 disabled:bg-slate-300"
                 >
                   <Send size={18} />
                 </button>
