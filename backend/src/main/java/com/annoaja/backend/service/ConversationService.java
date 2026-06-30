@@ -18,15 +18,22 @@ public class ConversationService {
     }
 
     public Conversation getOrCreateConversation(String userId1, String userId2) {
-        return conversationRepository.findByParticipantIdsContainingAndParticipantIdsContaining(userId1, userId2).orElseGet(() -> {
-                    Conversation conversation = new Conversation();
-                    conversation.setParticipantIds(Arrays.asList(userId1, userId2));
-                    conversation.setLastMessage("");
-                    conversation.setLastMessageSenderId("");
-                    conversation.setCreatedAt(LocalDateTime.now());
-                    conversation.setLastMessageAt(LocalDateTime.now());
-                    return conversationRepository.save(conversation);
-                });
+        List<Conversation> userConversations = conversationRepository.findByParticipantIdsContainingOrderByLastMessageAtDesc(userId1);
+
+        for (Conversation conversation : userConversations) {
+            if (conversation.getParticipantIds() != null && conversation.getParticipantIds().contains(userId2)) {
+                return conversation;
+            }
+        }
+
+        Conversation conversation = new Conversation();
+        conversation.setParticipantIds(Arrays.asList(userId1, userId2));
+        conversation.setLastMessage("");
+        conversation.setLastMessageSenderId("");
+        conversation.setCreatedAt(LocalDateTime.now());
+        conversation.setLastMessageAt(LocalDateTime.now());
+
+        return conversationRepository.save(conversation);
     }
 
     public List<Conversation> getUserConversations(String userId) {
