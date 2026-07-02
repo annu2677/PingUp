@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import {getAllUsers, getConversations, getOrCreateConversation, getMessages, sendMessage,} from "./api/messageApi.js";
+import {getAllUsers, getConversations, getOrCreateConversation, getMessages, sendMessage, markMessagesAsRead, } from "./api/messageApi.js";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -131,6 +131,11 @@ export default function Messages() {
 
       const messages = await getMessages(conversation.id);
       setChatMessages(Array.isArray(messages) ? messages : []);
+
+      await markMessagesAsRead(conversation.id, currentUserId);
+
+      const updatedMessages = await getMessages(conversation.id);
+      setChatMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
 
       await loadConversations();
     } catch (error) {
@@ -329,12 +334,15 @@ export default function Messages() {
                         >
                           <p className="text-sm">{message.text}</p>
 
-                          <p
-                            className={`mt-1 text-[10px] ${
-                              mine ? "text-blue-100" : "text-slate-400"
-                            }`}
-                          >
-                            {formatMessageTime(message.createdAt)}
+                          <p className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${mine ? "text-blue-100" : "text-slate-400"}`}
+>
+                          <span>{formatMessageTime(message.createdAt)}</span>
+
+                          {mine && (
+                          <span>
+                          {message.read ? "✓✓ Seen" : "✓ Sent"}
+                          </span>
+                          )}
                           </p>
                         </div>
                       </div>

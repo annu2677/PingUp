@@ -62,3 +62,15 @@ export const sendMessage = async ({ senderId, receiverId, text }) => {
 
   return responseText ? JSON.parse(responseText) : null;
 };
+
+export const markMessagesAsRead = async (conversationId, receiverId) => {
+  const response = await fetch(`${API_URL}/messages/${conversationId}/read/${receiverId}`,
+    {
+      method: "PUT",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to mark messages as read");
+  }
+};
