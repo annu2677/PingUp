@@ -20,6 +20,21 @@ export default function Messages() {
   const messagesEndRef = useRef(null);
   const currentUserId = user?.id;
 
+  const formatTime = (date) => {
+  if (!date) return "";
+
+  const d = new Date(date.endsWith("Z") ? date : `${date}Z`);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+
+  if (diff < 60) return "now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 172800) return "Yesterday";
+
+  return d.toLocaleDateString("en-IN");
+  };
+
   const formatMessageTime = (date) => {
   if (!date) return "";
 
@@ -30,8 +45,8 @@ export default function Messages() {
     minute: "2-digit",
     hour12: true,
     timeZone: "Asia/Kolkata",
-  });
-};
+    });
+  };
 
   const loadUsers = async () => {
     try {
