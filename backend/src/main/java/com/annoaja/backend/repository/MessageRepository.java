@@ -9,5 +9,7 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     List<Message> findByConversationIdOrderByCreatedAtAsc(String conversationId);
 
+    List<Message> findByConversationIdAndReceiverIdAndReadFalse(String conversationId, String receiverId);
+
     long countByConversationIdAndReceiverIdAndReadFalse(String conversationId, String receiverId);
 }

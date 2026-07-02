@@ -40,4 +40,14 @@ public class MessageService {
     public List<Message> getMessages(String conversationId) {
         return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
     }
+
+    public void markMessagesAsRead(String conversationId, String receiverId) {
+        List<Message> unreadMessages = messageRepository.findByConversationIdAndReceiverIdAndReadFalse(conversationId, receiverId);
+
+        for (Message message : unreadMessages) {
+            message.setRead(true);
+        }
+
+        messageRepository.saveAll(unreadMessages);
+    }
 }

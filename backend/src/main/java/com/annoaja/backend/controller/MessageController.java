@@ -27,4 +27,9 @@ public class MessageController {
     public List<Message> getMessages(@PathVariable String conversationId) {
         return messageService.getMessages(conversationId);
     }
+
+    @PutMapping("/{conversationId}/read/{receiverId}")
+    public void markMessagesAsRead(@PathVariable String conversationId, @PathVariable String receiverId) {
+        messageService.markMessagesAsRead(conversationId, receiverId);
+    }
 }
