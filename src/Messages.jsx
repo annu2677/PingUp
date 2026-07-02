@@ -20,10 +20,12 @@ export default function Messages() {
   const messagesEndRef = useRef(null);
   const currentUserId = user?.id;
 
-  const formatTime = (date) => {
+  const formatMessageTime = (date) => {
   if (!date) return "";
 
-  return new Date(date).toLocaleTimeString("en-IN", {
+  const fixedDate = date.endsWith("Z") ? date : `${date}Z`;
+
+  return new Date(fixedDate).toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -317,7 +319,7 @@ export default function Messages() {
                               mine ? "text-blue-100" : "text-slate-400"
                             }`}
                           >
-                            {formatTime(message.createdAt)}
+                            {formatMessageTime(message.createdAt)}
                           </p>
                         </div>
                       </div>
