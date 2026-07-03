@@ -145,6 +145,21 @@ export default function Messages() {
     }
   };
 
+  useEffect(() => {
+     if (!selectedConversation?.id) return;
+
+       const interval = setInterval(async () => {
+         try {
+           const updatedMessages = await getMessages(selectedConversation.id);
+           setChatMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
+         } catch (error) {
+         console.error("Error refreshing messages:", error);
+       } 
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedConversation?.id]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !currentUserId) return;
 
