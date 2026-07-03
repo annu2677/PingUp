@@ -66,4 +66,15 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateOnlineStatus(@PathVariable String id, @RequestBody Map<String, Boolean> body) {
+        try {
+            boolean online = body.getOrDefault("online", false);
+            return ResponseEntity.ok(userService.updateOnlineStatus(id, online));
+        }
+        catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        }
+    }
 }

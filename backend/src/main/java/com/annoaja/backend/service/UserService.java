@@ -7,6 +7,7 @@ import com.annoaja.backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -78,5 +79,20 @@ public class UserService {
         users.forEach(user -> user.setPassword(null));
 
         return users;
+    }
+
+    public User updateOnlineStatus(String userId, boolean online) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setOnline(online);
+
+        if (!online) {
+            user.setLastSeen(LocalDateTime.now());
+        }
+
+        User savedUser = userRepository.save(user);
+        savedUser.setPassword(null);
+
+        return savedUser;
     }
 }
