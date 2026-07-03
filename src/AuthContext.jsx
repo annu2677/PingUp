@@ -1,4 +1,4 @@
-import { loginUser, registerUser } from "./api/userApi";
+import { loginUser, registerUser, updateOnlineStatus } from "./api/userApi";
 import { createContext, useState, useContext, useEffect } from "react";
 
 const AuthContext = createContext();
@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
 
       setUser(loggedInUser);
       localStorage.setItem("currentUser", JSON.stringify(loggedInUser));
+      await updateOnlineStatus(loggedInUser.id, true);
     } catch (error) {
       console.error("LOGIN ERROR:", error);
       if (error instanceof TypeError) {
@@ -51,12 +52,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
 
     try {
-      const newUser = await registerUser({
-        name,
-        username,
-        email,
-        password,
-      });
+      const newUser = await registerUser({ name, username, email, password,});
 
       if (!newUser?.id) {
         throw new Error(newUser?.message || 'Signup failed');
@@ -64,6 +60,7 @@ export function AuthProvider({ children }) {
 
       setUser(newUser);
       localStorage.setItem("currentUser", JSON.stringify(newUser));
+      await updateOnlineStatus(newUser.id, true);
     } catch (error) {
       console.error("SIGNUP ERROR:", error);
       if (error instanceof TypeError) {
@@ -76,9 +73,17 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("currentUser");
-    setUser(null);
+  const logout = async () => {
+     if (user?.id) {
+       try {
+         await updateOnlineStatus(user.id, false);
+       } catch (error) {
+       console.error("Failed to update offline status:", error);
+       }
+     }
+
+     localStorage.removeItem("currentUser");
+     setUser(null);
   };
 
   return (

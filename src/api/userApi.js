@@ -77,3 +77,19 @@ export const getAllUsers = async () => {
 
   return data
 }
+
+export const updateOnlineStatus = async (userId, online) => {
+  const response = await fetch(`${API_URL}/users/${userId}/status`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ online }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update online status");
+  }
+
+  return response.json();
+};

@@ -306,7 +306,8 @@ export default function Messages() {
                   <h3 className="font-semibold text-slate-950">
                     {selectedUser.username || selectedUser.name || "User"}
                   </h3>
-                  <p className="text-xs text-slate-500">PingUp user</p>
+                  <p className="text-xs text-slate-500"> {selectedUser.online ? "🟢 Online" : selectedUser.lastSeen ? `Last seen ${formatTime(selectedUser.lastSeen)}`: "Offline"}
+                  </p>
                 </div>
               </div>
             </div>
