@@ -160,6 +160,31 @@ export default function Messages() {
     return () => clearInterval(interval);
   }, [selectedConversation?.id]);
 
+  useEffect(() => {
+     if (!selectedUser) return;
+
+     const interval = setInterval(async () => {
+       try {
+         await loadUsers();
+       } 
+       catch (error) {
+       console.error("Error refreshing user status:", error);
+       }
+     }, 5000);
+
+     return () => clearInterval(interval);
+  }, [selectedUser]);
+
+  useEffect(() => {
+     if (!selectedUser) return;
+
+     const freshUser = allUsers.find((item) => (item.id || item._id) === (selectedUser.id || selectedUser._id));
+
+     if (freshUser) {
+       setSelectedUser(freshUser);
+    }
+  }, [allUsers]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !currentUserId) return;
 
