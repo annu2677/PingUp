@@ -90,6 +90,11 @@
             <version>1.39.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
 <!--        &lt;!&ndash; Dotenv for reading .env file &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>me.paulschwarz</groupId>-->
