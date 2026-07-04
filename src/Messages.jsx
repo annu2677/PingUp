@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import {getAllUsers, getConversations, getOrCreateConversation, getMessages, sendMessage, markMessagesAsRead, } from "./api/messageApi.js";
+import { connectSocket, getSocket } from "./api/socket";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function Messages() {
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const socketSubscribed = useRef(false);
   const currentUserId = user?.id;
 
   const formatTime = (date) => {
@@ -146,21 +148,6 @@ export default function Messages() {
   };
 
   useEffect(() => {
-     if (!selectedConversation?.id) return;
-
-       const interval = setInterval(async () => {
-         try {
-           const updatedMessages = await getMessages(selectedConversation.id);
-           setChatMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
-         } catch (error) {
-         console.error("Error refreshing messages:", error);
-       } 
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [selectedConversation?.id]);
-
-  useEffect(() => {
      if (!selectedUser) return;
 
      const interval = setInterval(async () => {
@@ -185,21 +172,47 @@ export default function Messages() {
     }
   }, [allUsers]);
 
+  useEffect(() => {
+  if (!selectedConversation?.id) return;
+
+  const client = connectSocket(() => {
+    if (socketSubscribed.current) return;
+
+    socketSubscribed.current = true;
+
+    client.subscribe(`/topic/conversation/${selectedConversation.id}`,
+      (message) => {
+        const incoming = JSON.parse(message.body);
+
+        setChatMessages((prev) => {
+          const exists = prev.some((m) => m.id === incoming.id);
+
+          if (exists) return prev;
+
+          return [...prev, incoming];
+        });
+      }
+    );
+  });
+
+  return () => {
+    socketSubscribed.current = false;
+  };
+}, [selectedConversation]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !currentUserId) return;
 
     try {
-      const savedMessage = await sendMessage({
-        senderId: currentUserId,
-        receiverId: selectedUser.id || selectedUser._id,
-        text: newMessage.trim(),
-      });
+      const socket = getSocket();
 
-      setChatMessages((prev) => [...prev, savedMessage]);
+      socket.publish({destination: "/app/chat.send", body: JSON.stringify({senderId: currentUserId, receiverId: selectedUser.id || selectedUser._id, text: newMessage.trim(),}),});
+
       setNewMessage("");
 
       await loadConversations();
-    } catch (error) {
+    } 
+    catch (error) {
       console.error("Error sending message:", error);
       alert("Message failed. Please try again.");
     }
