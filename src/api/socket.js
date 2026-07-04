@@ -5,6 +5,7 @@ if (typeof window !== "undefined" && !window.global) {
 }
 
 let stompClient = null;
+let connectingPromise = null;
 
 export const connectSocket = async (onConnected) => {
   const SockJS = (await import("sockjs-client")).default;
@@ -14,28 +15,45 @@ export const connectSocket = async (onConnected) => {
     return stompClient;
   }
 
-  stompClient = new Client({
-    webSocketFactory: () =>
-      new SockJS(`${import.meta.env.VITE_API_URL.replace("/api", "")}/ws`),
+  if (connectingPromise) {
+    const client = await connectingPromise;
+    if (onConnected) onConnected(client);
+    return client;
+  }
 
-    reconnectDelay: 5000,
+  connectingPromise = new Promise((resolve, reject) => {
+    stompClient = new Client({
+      webSocketFactory: () =>
+        new SockJS(`${import.meta.env.VITE_API_URL.replace("/api", "")}/ws`),
 
-    onConnect: () => {
-      console.log("WebSocket connected");
-      if (onConnected) onConnected(stompClient);
-    },
+      reconnectDelay: 5000,
 
-    onStompError: (frame) => {
-      console.error("STOMP error:", frame);
-    },
+      onConnect: () => {
+        console.log("STOMP connected");
+        resolve(stompClient);
 
-    onWebSocketError: (error) => {
-      console.error("WebSocket error:", error);
-    },
+        if (onConnected) {
+          onConnected(stompClient);
+        }
+      },
+
+      onStompError: (frame) => {
+        console.error("STOMP error:", frame);
+        reject(frame);
+      },
+
+      onWebSocketError: (error) => {
+        console.error("WebSocket error:", error);
+      },
+    });
+
+    stompClient.activate();
   });
 
-  stompClient.activate();
-  return stompClient;
+  const client = await connectingPromise;
+  connectingPromise = null;
+
+  return client;
 };
 
 export const getSocket = () => stompClient;
@@ -44,5 +62,6 @@ export const disconnectSocket = () => {
   if (stompClient) {
     stompClient.deactivate();
     stompClient = null;
+    connectingPromise = null;
   }
 };
