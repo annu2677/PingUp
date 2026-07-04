@@ -144,6 +144,12 @@ export default function Messages() {
 
       await markMessagesAsRead(conversation.id, currentUserId);
 
+      const socket = getSocket();
+
+      if (socket?.connected) {
+       socket.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: conversation.id, receiverId: currentUserId,}),});
+     }
+
       const updatedMessages = await getMessages(conversation.id);
       setChatMessages(Array.isArray(updatedMessages) ? updatedMessages : []);
 
@@ -196,8 +202,7 @@ export default function Messages() {
         subscriptionRef.current = null;
       }
 
-      subscriptionRef.current = client.subscribe(
-        `/topic/conversation/${selectedConversation.id}`,
+      subscriptionRef.current = client.subscribe(`/topic/conversation/${selectedConversation.id}`,
         async (message) => {
           const incoming = JSON.parse(message.body);
 
@@ -209,12 +214,28 @@ export default function Messages() {
 
           if (incoming.receiverId === currentUserId) {
             await markMessagesAsRead(selectedConversation.id, currentUserId);
+
+            client.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: selectedConversation.id, receiverId: currentUserId,}),});
           }
 
           await loadConversations();
         }
       );
     };
+
+    client.subscribe(`/topic/conversation/${selectedConversation.id}/read`,
+    (message) => {
+       const data = JSON.parse(message.body);
+
+       setChatMessages((prev) =>
+       prev.map((msg) =>
+        msg.receiverId === data.receiverId
+          ? { ...msg, read: true }
+          : msg
+       )
+       );
+   }
+   );
 
     setupSubscription();
 
