@@ -32,4 +32,14 @@ public class ChatSocketController {
 
         messagingTemplate.convertAndSend("/topic/conversation/" + conversationId + "/typing", body);
     }
+
+    @MessageMapping("/chat.read")
+    public void markRead(Map<String, String> body) {
+        String conversationId = body.get("conversationId");
+        String receiverId = body.get("receiverId");
+
+        messageService.markMessagesAsRead(conversationId, receiverId);
+
+        messagingTemplate.convertAndSend("/topic/conversation/" + conversationId + "/read", body);
+    }
 }
