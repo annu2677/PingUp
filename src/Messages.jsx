@@ -2,8 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Send, ArrowLeft } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import {getAllUsers, getConversations, getOrCreateConversation, getMessages, sendMessage, markMessagesAsRead, } from "./api/messageApi.js";
-import { connectSocket, getSocket } from "./api/socket";
+import {
+  getAllUsers,
+  getConversations,
+  getOrCreateConversation,
+  getMessages,
+  markMessagesAsRead,
+} from "./api/messageApi.js";
+import { connectSocket, getSocket } from "./api/socket.js";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -19,34 +25,35 @@ export default function Messages() {
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const socketSubscribed = useRef(false);
+  const subscriptionRef = useRef(null);
+
   const currentUserId = user?.id;
 
   const formatTime = (date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const d = new Date(date.endsWith("Z") ? date : `${date}Z`);
-  const now = new Date();
-  const diff = (now - d) / 1000;
+    const d = new Date(date.endsWith("Z") ? date : `${date}Z`);
+    const now = new Date();
+    const diff = (now - d) / 1000;
 
-  if (diff < 60) return "now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 172800) return "Yesterday";
+    if (diff < 60) return "now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    if (diff < 172800) return "Yesterday";
 
-  return d.toLocaleDateString("en-IN");
+    return d.toLocaleDateString("en-IN");
   };
 
   const formatMessageTime = (date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const fixedDate = date.endsWith("Z") ? date : `${date}Z`;
+    const fixedDate = date.endsWith("Z") ? date : `${date}Z`;
 
-  return new Date(fixedDate).toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
+    return new Date(fixedDate).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
     });
   };
 
@@ -104,7 +111,8 @@ export default function Messages() {
     return allUsers.find((item) => (item.id || item._id) === userId);
   };
 
-  const conversationUsers = conversations.map((conversation) => {
+  const conversationUsers = conversations
+    .map((conversation) => {
       const otherUserId = getOtherUserId(conversation);
       const otherUser = findUserById(otherUserId);
 
@@ -148,71 +156,102 @@ export default function Messages() {
   };
 
   useEffect(() => {
-     if (!selectedUser) return;
+    if (!selectedUser) return;
 
-     const interval = setInterval(async () => {
-       try {
-         await loadUsers();
-       } 
-       catch (error) {
-       console.error("Error refreshing user status:", error);
-       }
-     }, 5000);
+    const interval = setInterval(async () => {
+      try {
+        await loadUsers();
+      } catch (error) {
+        console.error("Error refreshing user status:", error);
+      }
+    }, 5000);
 
-     return () => clearInterval(interval);
+    return () => clearInterval(interval);
   }, [selectedUser]);
 
   useEffect(() => {
-     if (!selectedUser) return;
+    if (!selectedUser) return;
 
-     const freshUser = allUsers.find((item) => (item.id || item._id) === (selectedUser.id || selectedUser._id));
+    const freshUser = allUsers.find(
+      (item) => (item.id || item._id) === (selectedUser.id || selectedUser._id)
+    );
 
-     if (freshUser) {
-       setSelectedUser(freshUser);
+    if (freshUser) {
+      setSelectedUser(freshUser);
     }
   }, [allUsers]);
 
   useEffect(() => {
-  if (!selectedConversation?.id) return;
+    if (!selectedConversation?.id) return;
 
-  const client = connectSocket(() => {
-    if (socketSubscribed.current) return;
+    let isActive = true;
 
-    socketSubscribed.current = true;
+    const setupSubscription = async () => {
+      const client = await connectSocket();
 
-    client.subscribe(`/topic/conversation/${selectedConversation.id}`,
-      (message) => {
-        const incoming = JSON.parse(message.body);
+      if (!isActive || !client) return;
 
-        setChatMessages((prev) => {
-          const exists = prev.some((m) => m.id === incoming.id);
-
-          if (exists) return prev;
-
-          return [...prev, incoming];
-        });
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
       }
-    );
-  });
 
-  return () => {
-    socketSubscribed.current = false;
-  };
-}, [selectedConversation]);
+      subscriptionRef.current = client.subscribe(
+        `/topic/conversation/${selectedConversation.id}`,
+        async (message) => {
+          const incoming = JSON.parse(message.body);
+
+          setChatMessages((prev) => {
+            const exists = prev.some((m) => m.id === incoming.id);
+            if (exists) return prev;
+            return [...prev, incoming];
+          });
+
+          if (incoming.receiverId === currentUserId) {
+            await markMessagesAsRead(selectedConversation.id, currentUserId);
+          }
+
+          await loadConversations();
+        }
+      );
+    };
+
+    setupSubscription();
+
+    return () => {
+      isActive = false;
+
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+    };
+  }, [selectedConversation?.id, currentUserId]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !currentUserId) return;
 
     try {
-      const socket = getSocket();
+      const client = getSocket();
 
-      socket.publish({destination: "/app/chat.send", body: JSON.stringify({senderId: currentUserId, receiverId: selectedUser.id || selectedUser._id, text: newMessage.trim(),}),});
+      if (!client || !client.connected) {
+        alert("Chat is connecting. Please try again in a second.");
+        await connectSocket();
+        return;
+      }
+
+      client.publish({
+        destination: "/app/chat.send",
+        body: JSON.stringify({
+          senderId: currentUserId,
+          receiverId: selectedUser.id || selectedUser._id,
+          text: newMessage.trim(),
+        }),
+      });
 
       setNewMessage("");
-
       await loadConversations();
-    } 
-    catch (error) {
+    } catch (error) {
       console.error("Error sending message:", error);
       alert("Message failed. Please try again.");
     }
@@ -325,7 +364,9 @@ export default function Messages() {
       </div>
 
       <div
-        className={`flex flex-1 flex-col ${selectedUser ? "flex" : "hidden md:flex"}`}
+        className={`flex flex-1 flex-col ${
+          selectedUser ? "flex" : "hidden md:flex"
+        }`}
       >
         {selectedUser ? (
           <>
@@ -344,7 +385,12 @@ export default function Messages() {
                   <h3 className="font-semibold text-slate-950">
                     {selectedUser.username || selectedUser.name || "User"}
                   </h3>
-                  <p className="text-xs text-slate-500"> {selectedUser.online ? "🟢 Online" : selectedUser.lastSeen ? `Last seen ${formatTime(selectedUser.lastSeen)}`: "Offline"}
+                  <p className="text-xs text-slate-500">
+                    {selectedUser.online
+                      ? "🟢 Online"
+                      : selectedUser.lastSeen
+                      ? `Last seen ${formatTime(selectedUser.lastSeen)}`
+                      : "Offline"}
                   </p>
                 </div>
               </div>
@@ -377,7 +423,9 @@ export default function Messages() {
                     return (
                       <div
                         key={message.id}
-                        className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                        className={`flex ${
+                          mine ? "justify-end" : "justify-start"
+                        }`}
                       >
                         <div
                           className={`max-w-[75%] rounded-2xl px-4 py-2 ${
@@ -388,15 +436,16 @@ export default function Messages() {
                         >
                           <p className="text-sm">{message.text}</p>
 
-                          <p className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${mine ? "text-blue-100" : "text-slate-400"}`}
->
-                          <span>{formatMessageTime(message.createdAt)}</span>
+                          <p
+                            className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
+                              mine ? "text-blue-100" : "text-slate-400"
+                            }`}
+                          >
+                            <span>{formatMessageTime(message.createdAt)}</span>
 
-                          {mine && (
-                          <span>
-                          {message.read ? "✓✓ Seen" : "✓ Sent"}
-                          </span>
-                          )}
+                            {mine && (
+                              <span>{message.read ? "✓✓ Seen" : "✓ Sent"}</span>
+                            )}
                           </p>
                         </div>
                       </div>

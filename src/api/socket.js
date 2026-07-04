@@ -1,9 +1,14 @@
-import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
+
+if (typeof window !== "undefined" && !window.global) {
+  window.global = window;
+}
 
 let stompClient = null;
 
-export const connectSocket = (onConnected) => {
+export const connectSocket = async (onConnected) => {
+  const SockJS = (await import("sockjs-client")).default;
+
   if (stompClient?.connected) {
     if (onConnected) onConnected(stompClient);
     return stompClient;
@@ -17,10 +22,7 @@ export const connectSocket = (onConnected) => {
 
     onConnect: () => {
       console.log("WebSocket connected");
-
-      if (onConnected) {
-        onConnected(stompClient);
-      }
+      if (onConnected) onConnected(stompClient);
     },
 
     onStompError: (frame) => {
@@ -33,13 +35,10 @@ export const connectSocket = (onConnected) => {
   });
 
   stompClient.activate();
-
   return stompClient;
 };
 
-export const getSocket = () => {
-  return stompClient;
-};
+export const getSocket = () => stompClient;
 
 export const disconnectSocket = () => {
   if (stompClient) {
