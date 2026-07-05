@@ -187,70 +187,68 @@ export default function Messages() {
   }, [allUsers]);
 
   useEffect(() => {
-    if (!selectedConversation?.id) return;
+  if (!selectedConversation?.id) return;
 
-    let isActive = true;
+  let isActive = true;
+  let messageSubscription = null;
+  let readSubscription = null;
 
-    const setupSubscription = async () => {
-      const client = await connectSocket();
+  const setupSubscription = async () => {
+    const client = await connectSocket();
 
-      if (!isActive || !client) return;
+    if (!isActive || !client?.connected) return;
 
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
+    messageSubscription = client.subscribe(`/topic/conversation/${selectedConversation.id}`, async (message) => {
+        const incoming = JSON.parse(message.body);
 
-      subscriptionRef.current = client.subscribe(`/topic/conversation/${selectedConversation.id}`,
-        async (message) => {
-          const incoming = JSON.parse(message.body);
+        setChatMessages((prev) => {
+          const exists = prev.some((m) => m.id === incoming.id);
+          if (exists) return prev;
+          return [...prev, incoming];
+        });
 
-          setChatMessages((prev) => {
-            const exists = prev.some((m) => m.id === incoming.id);
-            if (exists) return prev;
-            return [...prev, incoming];
-          });
+        if (incoming.receiverId === currentUserId) {
+          await markMessagesAsRead(selectedConversation.id, currentUserId);
 
-          if (incoming.receiverId === currentUserId) {
-            await markMessagesAsRead(selectedConversation.id, currentUserId);
+          const socket = getSocket();
 
-            const socket = getSocket();
-
-            if (socket?.connected) {
-             socket.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: selectedConversation.id, receiverId: currentUserId,}),});
-            }
+          if (socket?.connected) {
+            socket.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: selectedConversation.id, receiverId: currentUserId,}),});
           }
-
-          await loadConversations();
         }
-      );
-    };
 
-    client.subscribe(`/topic/conversation/${selectedConversation.id}/read`,
-    (message) => {
-       const data = JSON.parse(message.body);
-
-       setChatMessages((prev) =>
-       prev.map((msg) =>
-        msg.receiverId === data.receiverId
-          ? { ...msg, read: true }
-          : msg
-       )
-       );
-   }
-   );
-
-    setupSubscription();
-
-    return () => {
-      isActive = false;
-
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
+        await loadConversations();
       }
-    };
-  }, [selectedConversation?.id, currentUserId]);
+    );
+
+    readSubscription = client.subscribe(`/topic/conversation/${selectedConversation.id}/read`, (message) => {
+        const data = JSON.parse(message.body);
+
+        setChatMessages((prev) =>
+          prev.map((msg) =>
+            msg.receiverId === data.receiverId
+              ? { ...msg, read: true }
+              : msg
+          )
+        );
+      }
+    );
+  };
+
+  setupSubscription();
+
+  return () => {
+    isActive = false;
+
+    if (messageSubscription) {
+      messageSubscription.unsubscribe();
+    }
+
+    if (readSubscription) {
+      readSubscription.unsubscribe();
+    }
+  };
+}, [selectedConversation?.id, currentUserId]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !currentUserId) return;
