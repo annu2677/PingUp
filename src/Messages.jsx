@@ -111,8 +111,7 @@ export default function Messages() {
     return allUsers.find((item) => (item.id || item._id) === userId);
   };
 
-  const conversationUsers = conversations
-    .map((conversation) => {
+  const conversationUsers = conversations.map((conversation) => {
       const otherUserId = getOtherUserId(conversation);
       const otherUser = findUserById(otherUserId);
 
@@ -215,7 +214,11 @@ export default function Messages() {
           if (incoming.receiverId === currentUserId) {
             await markMessagesAsRead(selectedConversation.id, currentUserId);
 
-            client.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: selectedConversation.id, receiverId: currentUserId,}),});
+            const socket = getSocket();
+
+            if (socket?.connected) {
+             socket.publish({destination: "/app/chat.read", body: JSON.stringify({conversationId: selectedConversation.id, receiverId: currentUserId,}),});
+            }
           }
 
           await loadConversations();
