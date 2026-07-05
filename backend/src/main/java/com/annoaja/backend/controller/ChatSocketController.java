@@ -42,4 +42,12 @@ public class ChatSocketController {
 
         messagingTemplate.convertAndSend("/topic/conversation/" + conversationId + "/read", body);
     }
+
+    @MessageMapping("/chat.status")
+    public void userStatus(Map<String, String> body) {
+        String userId = body.get("userId");
+        String online = body.get("online");
+
+        messagingTemplate.convertAndSend("/topic/user-status", body);
+    }
 }
