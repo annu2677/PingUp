@@ -192,6 +192,7 @@ export default function Messages() {
   let isActive = true;
   let messageSubscription = null;
   let readSubscription = null;
+  let statusSubscription = null;
 
   const setupSubscription = async () => {
     const client = await connectSocket();
@@ -235,47 +236,43 @@ export default function Messages() {
         );
       }
     );
-  };
 
-  const statusSubscription = client.subscribe("/topic/user-status", (message) => {
-    const data = JSON.parse(message.body);
+    statusSubscription = client.subscribe("/topic/user-status", (message) => {
+         const data = JSON.parse(message.body);
 
-    const statusUserId = data.userId;
-    const online = data.online === "true";
+         const statusUserId = data.userId;
+         const online = data.online === "true";
 
-    setAllUsers((prev) =>
-      prev.map((u) =>
-        (u.id || u._id) === statusUserId
-          ? { ...u, online }
-          : u
-      )
+         setAllUsers((prev) =>
+            prev.map((u) =>
+                (u.id || u._id) === statusUserId ? { ...u, online } : u ));
+
+          setSelectedUser((prev) => {
+            if (!prev) return prev;
+
+            if ((prev.id || prev._id) !== statusUserId) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                online,
+            };
+         });
+    }
     );
-
-    setSelectedUser((prev) => {
-      if (!prev) return prev;
-
-      if ((prev.id || prev._id) !== statusUserId) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        online,
-      };
-    });
-  }
-);
+  };
 
   setupSubscription();
 
-  const socket = getSocket();
-
-  if (socket?.connected) {
-     socket.publish({destination: "/app/chat.status", body: JSON.stringify({userId: currentUserId, online: false,}),});
-  }
-
   return () => {
     isActive = false;
+
+    const socket = getSocket();
+
+    if (socket?.connected) {
+     socket.publish({destination: "/app/chat.status", body: JSON.stringify({userId: currentUserId, online: false,}),});
+    }
 
     if (messageSubscription) {
       messageSubscription.unsubscribe();
