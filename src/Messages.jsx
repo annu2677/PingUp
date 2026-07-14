@@ -196,6 +196,8 @@ export default function Messages() {
   const setupSubscription = async () => {
     const client = await connectSocket();
 
+    client.publish({destination: "/app/chat.status", body: JSON.stringify({userId: currentUserId, online: true,}),});
+
     if (!isActive || !client?.connected) return;
 
     messageSubscription = client.subscribe(`/topic/conversation/${selectedConversation.id}`, async (message) => {
@@ -235,7 +237,42 @@ export default function Messages() {
     );
   };
 
+  const statusSubscription = client.subscribe("/topic/user-status", (message) => {
+    const data = JSON.parse(message.body);
+
+    const statusUserId = data.userId;
+    const online = data.online === "true";
+
+    setAllUsers((prev) =>
+      prev.map((u) =>
+        (u.id || u._id) === statusUserId
+          ? { ...u, online }
+          : u
+      )
+    );
+
+    setSelectedUser((prev) => {
+      if (!prev) return prev;
+
+      if ((prev.id || prev._id) !== statusUserId) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        online,
+      };
+    });
+  }
+);
+
   setupSubscription();
+
+  const socket = getSocket();
+
+  if (socket?.connected) {
+     socket.publish({destination: "/app/chat.status", body: JSON.stringify({userId: currentUserId, online: false,}),});
+  }
 
   return () => {
     isActive = false;
@@ -246,6 +283,10 @@ export default function Messages() {
 
     if (readSubscription) {
       readSubscription.unsubscribe();
+    }
+
+    if (statusSubscription) {
+       statusSubscription.unsubscribe();
     }
   };
 }, [selectedConversation?.id, currentUserId]);
